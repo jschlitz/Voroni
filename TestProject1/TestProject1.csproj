@@ -55,6 +55,10 @@
       <Project>{DAE7FAD1-608F-484B-9B58-77BCE5BCE0BE}</Project>
       <Name>DataStructures</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Geometry\Geometry.csproj">
+      <Project>{7D5282EF-2F50-46DC-866D-E44246A76265}</Project>
+      <Name>Geometry</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Voroni\Voroni.csproj">
       <Project>{53ADE3BA-A54E-4F9E-BCA6-2317C01F739C}</Project>
       <Name>Voroni</Name>
