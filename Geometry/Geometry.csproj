@@ -43,9 +43,17 @@
   <ItemGroup>
     <Compile Include="Face.cs" />
     <Compile Include="HalfEdge.cs" />
+    <Compile Include="HalfEdgeStructure.cs" />
     <Compile Include="Parabola.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Vertex.cs" />
+    <Compile Include="VoroniBuilder.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DataStructures\DataStructures.csproj">
+      <Project>{DAE7FAD1-608F-484B-9B58-77BCE5BCE0BE}</Project>
+      <Name>DataStructures</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

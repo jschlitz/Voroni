@@ -8,14 +8,16 @@ namespace Geometry
 {
   public class Face
   {
+    public Face(Point site)
+    {
+      Site = site;
+    }
+
     /// <summary>
     /// One of the edges in the outer edge of the face
     /// </summary>
-    HalfEdge OuterComponent { get; set; }
+    public HalfEdge OuterEdge { get; set; }
 
-    /// <summary>
-    /// One of the edges in any hole in the face
-    /// </summary>
-    HalfEdge InnerComponent { get; set; }
+    public Point Site { get; set; }
   }
 }
