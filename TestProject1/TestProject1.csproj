@@ -55,6 +55,7 @@
     <Compile Include="SkipTests.cs" />
     <Compile Include="UnitTest1.cs" />
     <Compile Include="VoroniBuilderTest.cs" />
+    <Compile Include="VoroniBuilder_StatusStructureTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DataStructures\DataStructures.csproj">
@@ -69,6 +70,9 @@
       <Project>{53ADE3BA-A54E-4F9E-BCA6-2317C01F739C}</Project>
       <Name>Voroni</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Shadow Include="Test References\Geometry.accessor" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
