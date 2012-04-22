@@ -20,24 +20,74 @@ namespace Geometry
     {
       //fill the queue with the initial point events.
       //TODO: this probably changes to something smarter --  we differentiate face events from circle events
-      var PQueue = new SkipList<Point>(PointComparer.Instance);
-      foreach (var p in points) PQueue.Add(p);
+      var pQueue = new SkipList<Point>(PointComparer.Instance);
+      var parabolic = new ParabolicComparer();
+      var status = new SkipList<Point>(parabolic);
+      foreach (var p in points) pQueue.Add(p);
 
       var result = new HalfEdgeStructure();
 
       //until the queue is empty...
-      while (PQueue.Count > 0)
+      while (pQueue.Count > 0)
       {
         //dequeue
-        Point item = PQueue.First();
-        PQueue.Remove(item);
+        Point item = pQueue.First();
+        pQueue.Remove(item);
 
+        //new face
         var newFace = new Face(item);
         result.Faces.Add(newFace);
+
+        //add to status
+        parabolic.Directix = item.Y;
       }
 
 
       return result;
+    }
+
+    private class ParabolicComparer : IComparer<Point>
+    {
+      /// <summary>
+      /// Directix line of the parabolas
+      /// </summary>
+      public double Directix { get; set; }
+
+      public int Compare(Point x, Point y)
+      {
+        throw new NotImplementedException();
+      }
+    }
+
+    private class StatusStructure : SkipList<Parabola>
+    {
+      //When I extend this for Voroni, I'll have to more explicitly control 
+      //insertions and deletions. It depends on finding node triplets that
+      //are in the right place. I can't just rely on a simple comparer to keep the
+      //right order.
+      /// <summary>
+      /// Find the node for which c.Compare() returns 0. If c lt 0, it assumes the 
+      /// tested node is too "small." c gt 0 the tested node is too "big."
+      /// </summary>
+      public SkipNode<Parabola> FindNode(Func<Parabola, SkipNode<Parabola>, int> c, Parabola item)
+      {
+        var current = _Root;
+
+        for (int i = current.Height - 1; i >= 0; i--)
+        {
+
+          //go either til we find it, or the last one at this level that is less than item
+          while (current[i] != null && (c(item, current[i]) > 0))
+          {
+            current = current[i];
+          }
+        }
+
+        if (current != _Root && c(item, current) == 0)
+          return current;
+        else
+          return null;
+      }
     }
 
     /// <summary>
