@@ -21,8 +21,7 @@ namespace Geometry
       //fill the queue with the initial point events.
       //TODO: this probably changes to something smarter --  we differentiate face events from circle events
       var pQueue = new SkipList<Point>(PointComparer.Instance);
-      var parabolic = new ParabolicComparer();
-      var status = new SkipList<Point>(parabolic);
+      var status = new StatusStructure();
       foreach (var p in points) pQueue.Add(p);
 
       var result = new HalfEdgeStructure();
@@ -39,27 +38,15 @@ namespace Geometry
         result.Faces.Add(newFace);
 
         //add to status
-        parabolic.Directix = item.Y;
+        status.Directix = item.Y;
       }
 
 
       return result;
     }
 
-    private class ParabolicComparer : IComparer<Point>
-    {
-      /// <summary>
-      /// Directix line of the parabolas
-      /// </summary>
-      public double Directix { get; set; }
 
-      public int Compare(Point x, Point y)
-      {
-        throw new NotImplementedException();
-      }
-    }
-
-    private class StatusStructure : SkipList<Parabola>
+    private class StatusStructure : SkipList<Point>
     {
       //When I extend this for Voroni, I'll have to more explicitly control 
       //insertions and deletions. It depends on finding node triplets that
@@ -69,7 +56,7 @@ namespace Geometry
       /// Find the node for which c.Compare() returns 0. If c lt 0, it assumes the 
       /// tested node is too "small." c gt 0 the tested node is too "big."
       /// </summary>
-      public SkipNode<Parabola> FindNode(Func<Parabola, SkipNode<Parabola>, int> c, Parabola item)
+      public SkipNode<Parabola> FindNode(Point item)
       {
         var current = _Root;
 
@@ -77,18 +64,84 @@ namespace Geometry
         {
 
           //go either til we find it, or the last one at this level that is less than item
-          while (current[i] != null && (c(item, current[i]) > 0))
+          while (current[i] != null && (Checker(item, current[i]) > 0))
           {
             current = current[i];
           }
         }
 
-        if (current != _Root && c(item, current) == 0)
+        if (current != _Root && Checker(item, current) == 0)
           return current;
         else
           return null;
       }
+
+      /// <summary>
+      /// The sweep line
+      /// </summary>
+      public double Directix { get; set; }
+
+      /// <summary>
+      /// does item bisect this this parabola (0), one before it (-1)  or after (1)?
+      /// </summary>
+      /// <returns></returns>
+      private int Checker(Point item, SkipNode<Point> n)
+      {
+        var nParabola = new Parabola(n.Value, Directix);
+
+        double lBound;
+        //if this is the first item, let -infinity be lower bound
+        //otherwise find the intersection w. previous node
+        if (n.Previous == _Root)
+          lBound = double.NegativeInfinity;
+        else
+        {
+          var prev = new Parabola(n.Previous.Value, Directix);
+          var intersections = nParabola.Intersect(prev);
+          if (Parabola.IsNoIntersection(intersections.Item2))
+          {
+            //0-assertfail
+            System.Diagnostics.Debug.Assert(!Parabola.IsNoIntersection(intersections.Item1), 
+              String.Format("No interesections between consecutive items: {0} and {1}", prev, nParabola);
+            
+            lBound = intersections.Item1.X;
+          }
+          else //2, largest 
+            lBound = Math.Max(intersections.Item1.X, intersections.Item2.X);
+        }
+        //item < lowerbound? -1
+        if(item.X < lBound)
+          return -1;
+
+        //last item? upper bound is +inifinity
+        //otherwise intersection w/ next parabola
+        double uBound;
+        if(n.Next() == null)
+          uBound = double.PositiveInfinity;
+        else
+        {
+          var next = new Parabola(n.Next().Value, Directix);
+          var intersections = nParabola.Intersect(next);
+          if (Parabola.IsNoIntersection(intersections.Item2))
+          {
+            //0-assertfail
+            System.Diagnostics.Debug.Assert(!Parabola.IsNoIntersection(intersections.Item1), 
+              String.Format("No interesections between consecutive items: {0} and {1}", nParabola, next);
+            
+            uBound = intersections.Item1.X;
+          }
+          else
+            uBound = Math.Min(intersections.Item1.X, intersections.Item2.X);
+        }
+        //item >= upperbound? +1
+        if (item.X >= uBound)
+          return 1;
+
+        //we got here? this must be the place.
+        return 0;
+      }
     }
+
 
     /// <summary>
     /// Compare 2 points by their Y value, high to low. if they are equal, compare by X, low to high.
