@@ -234,7 +234,7 @@ namespace DataStructures
     /// <summary>
     /// Add an item to the list. Log(n) operation.
     /// </summary>
-    public void  Add(T item, out SkipNode<T> itemNode)
+    virtual public void  Add(T item, out SkipNode<T> itemNode)
     {
       //How high is this node?
       var height = GetHeight();
@@ -269,26 +269,32 @@ namespace DataStructures
       //And now we're bigger.
       Count++;
     }
-
     public bool Remove(T item)
     {
+      SkipNode<T> dummy;
+      return Remove(item, out dummy);
+    }
+
+    virtual public bool Remove(T item, out SkipNode<T> removed)
+    {
       //find the one that it goes just after
+      removed = null;
       var predecessors = GetPredecessors(item);
       if (predecessors[0] == null) return false;
 
-      var deleteMe = predecessors[0].Next();
-      if (deleteMe == null) return false;
+      removed = predecessors[0].Next();
+      if (removed == null) return false;
 
       //did we not find it?
-      if ( Comparer.Compare(deleteMe.Value, item) != 0) return false;
+      if (Comparer.Compare(item, removed.Value) != 0) return false;
 
       //rethread the references. the trick is that we don't care about predecessors at a height > the deleted node's
-      for (int i = 0; i < deleteMe.Height; i++)
-        predecessors[i][i] = deleteMe[i];
+      for (int i = 0; i < removed.Height; i++)
+        predecessors[i][i] = removed[i];
 
       //fix Previouses
-      if(deleteMe.Next() != null)
-        deleteMe.Next().Previous = deleteMe.Previous;
+      if (removed.Next() != null)
+        removed.Next().Previous = removed.Previous;
       
       //And now we're smaller.
       Count--;
@@ -303,7 +309,7 @@ namespace DataStructures
       // determine the nodes that need to be updated at each level
       for (int i = _Root.Height - 1; i >= 0; i--)
       {
-        while (current[i] != null && Comparer.Compare(current[i].Value, value) < 0)
+        while (current[i] != null && Comparer.Compare(value, current[i].Value) >= 0)
           current = current[i];
 
         updates[i] = current;
