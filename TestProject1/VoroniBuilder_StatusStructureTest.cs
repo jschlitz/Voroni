@@ -141,31 +141,20 @@ namespace TestProject1
       Assert.AreEqual(9, target.Count);
 
       //in the real app, we'll be removing by direct reference. Still. this ought to work.
-      //target.Remove(new VoroniBuilder.Triple(new Point(-0.49, 0)), out itemNode);
-      //Assert.AreEqual(P3, itemNode.Value.Left);
-      //Assert.AreEqual(P2, itemNode.Value.Center);
-      //Assert.AreEqual(P4, itemNode.Value.Right);
-      //Assert.AreEqual(8, target.Count);
+      double removeAtX = (new VoroniBuilder.Triple(P3, P2, P4)).FindAnX(1.1);
+      target.Remove(new VoroniBuilder.Triple(new Point(removeAtX, 0)), out itemNode); //x21, 212, 123, 234, 342, 426, 262, 62x
+      Assert.AreEqual(P3, itemNode.Value.Left);
+      Assert.AreEqual(P2, itemNode.Value.Center);
+      Assert.AreEqual(P4, itemNode.Value.Right);
+      Assert.AreEqual(P2, itemNode.Previous.Value.Left);
+      Assert.AreEqual(P3, itemNode.Previous.Value.Center);
+      Assert.AreEqual(P4, itemNode.Previous.Value.Right);
+      Assert.AreEqual(P3, itemNode.Next().Value.Left);
+      Assert.AreEqual(P4, itemNode.Next().Value.Center);
+      Assert.AreEqual(P2, itemNode.Next().Value.Right);
+      Assert.AreEqual(8, target.Count);
 
 
-    }
-
-    /// <summary>
-    ///A test for Remove
-    ///</summary>
-    [TestMethod()]
-    public void RemoveTest()
-    {
-      VoroniBuilder.StatusStructure target = new VoroniBuilder.StatusStructure(); // TODO: Initialize to an appropriate value
-      VoroniBuilder.Triple item = null; // TODO: Initialize to an appropriate value
-      SkipNode<VoroniBuilder.Triple> removed = null; // TODO: Initialize to an appropriate value
-      SkipNode<VoroniBuilder.Triple> removedExpected = null; // TODO: Initialize to an appropriate value
-      bool expected = false; // TODO: Initialize to an appropriate value
-      bool actual;
-      actual = target.Remove(item, out removed);
-      Assert.AreEqual(removedExpected, removed);
-      Assert.AreEqual(expected, actual);
-      Assert.Inconclusive("Verify the correctness of this test method.");
     }
   }
 }

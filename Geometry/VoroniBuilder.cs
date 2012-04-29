@@ -149,13 +149,21 @@ namespace Geometry
       }
 
 
-      ///// <summary>
-      ///// Find a point on the parabolic arc described by the center point, 
-      ///// bound by the left and right.
-      ///// </summary>
-      //public double FindAnX(double directix)
-      //{ 
-      //}
+      /// <summary>
+      /// Find a point on the parabolic arc described by the center point, 
+      /// bound by the left and right.
+      /// </summary>
+      public double FindAnX(double directix)
+      {
+        var l = LeftBound(directix);
+        var r = RightBound(directix);
+        if (double.IsInfinity(l))
+          return (double.IsInfinity(r) ? Center.X : r - 1);
+        else if (double.IsInfinity(r))
+          return l + 1; //taken care of infinte lereturn (double.IsInfinity(l) ? Center.X : l + 1);
+        else
+          return (l + r) / 2;
+      }
     }
 
     public  class StatusStructure : SkipList<Triple>

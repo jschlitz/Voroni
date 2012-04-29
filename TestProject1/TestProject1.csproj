@@ -56,6 +56,7 @@
     <Compile Include="UnitTest1.cs" />
     <Compile Include="VoroniBuilderTest.cs" />
     <Compile Include="VoroniBuilder_StatusStructureTest.cs" />
+    <Compile Include="VoroniBuilder_TripleTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DataStructures\DataStructures.csproj">
