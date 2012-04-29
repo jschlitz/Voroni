@@ -45,7 +45,7 @@ namespace Geometry
       return result;
     }
 
-    private class Triple  
+    public class Triple  
     {
       public Point? Left { get; set; }
       public Point? Right { get; set; }
@@ -63,9 +63,102 @@ namespace Geometry
         Center = index;
         IsIndex = true;
       }
+
+      public Triple Copy()
+      {
+        if (IsIndex)
+          return new Triple(Center);
+        else
+          return new Triple(
+            Left == null ? null : (Point?)Left.Value, 
+            Center, 
+            Right == null ? null : (Point?)Right.Value);
+      }
+      public override string ToString()
+      {
+        var sb = new StringBuilder();
+        sb.Append("(");
+        sb.Append(Left.HasValue ? Left.ToString() : "x");
+        sb.Append(")");
+        sb.Append("[");
+        sb.Append(Center.ToString());
+        sb.Append("]");
+        sb.Append("(");
+        sb.Append(Right.HasValue ? Right.ToString() : "x");
+        sb.Append(")");
+        return sb.ToString();
+      }
+
+      /// <summary>
+      /// givent the parabolas described by Center & Right (and the directix) 
+      /// find the boundry intersection
+      /// </summary>
+      public double RightBound(double directix)
+      {
+        var nParabola = new Parabola(Center, directix);
+        double uBound;
+        if (!Right.HasValue)
+          uBound = double.PositiveInfinity;
+        else
+        {
+          var next = new Parabola(Right.Value, directix);
+          var intersections = nParabola.Intersect(next);
+          if (Parabola.IsNoIntersection(intersections.Item2))
+          {
+            //0-assertfail
+            System.Diagnostics.Debug.Assert(!Parabola.IsNoIntersection(intersections.Item1),
+              String.Format("No interesections between consecutive items: {0} and {1}", nParabola, next));
+
+            uBound = intersections.Item1.X;
+          }
+          else
+            uBound = Math.Min(intersections.Item1.X, intersections.Item2.X);
+        }
+        return uBound;
+      }
+
+      /// <summary>
+      /// givent the parabolas described by Center & Left (and the directix) 
+      /// find the boundry intersection
+      /// </summary>
+      public double LeftBound(double directix)
+      {
+        var nParabola = new Parabola(Center, directix);
+
+        double lBound;
+        //if this is the first item, let -infinity be lower bound
+        //otherwise find the intersection w. previous node
+        if (!Left.HasValue)
+          lBound = double.NegativeInfinity;
+        else
+        {
+          var prev = new Parabola(Left.Value, directix);
+          var intersections = nParabola.Intersect(prev);
+          if (Parabola.IsNoIntersection(intersections.Item2))
+          {
+            //0-assertfail
+            System.Diagnostics.Debug.Assert(!Parabola.IsNoIntersection(intersections.Item1),
+              String.Format("No interesections between consecutive items: {0} and {1}", prev, nParabola));
+
+            lBound = intersections.Item1.X;
+          }
+          else //2, largest 
+            lBound = Math.Max(intersections.Item1.X, intersections.Item2.X);
+        }
+        return lBound;
+      }
+
+
+      ///// <summary>
+      ///// Find a point on the parabolic arc described by the center point, 
+      ///// bound by the left and right.
+      ///// </summary>
+      //public double FindAnX(double directix)
+      //{ 
+      //}
     }
 
-    private class StatusStructure : SkipList<Triple>
+    public  class StatusStructure : SkipList<Triple>
     {
 
       public StatusStructure() : base(BeachLineComparer.Instance) { }
@@ -131,10 +224,41 @@ namespace Geometry
        * 
        * Brilliant!
       */
-      public override void Add(Triple item, out SkipNode<Triple> itemNode)
+      public override SkipNode<Triple>[] Add(Triple item, out SkipNode<Triple> itemNode)
       {
-        base.Add(item, out itemNode);
+        //some work to set up the node that we'll be inserting before the main one.
+        var predecessors = base.Add(item, out itemNode);
 
+        //the node we dup is itemnode.Next, and we make it previous. hmm..
+
+        if (itemNode.Next() != null) //any time but during the first insertion
+        {
+          var prevNode = new SkipNode<Triple>(ReadjustHeight(), itemNode.Next().Value.Copy());
+
+          //we may need to fix up predecessors...
+          if (predecessors.Length < _Root.Height)
+          {
+            var old = predecessors;
+
+            predecessors = new SkipNode<Triple>[_Root.Height];
+            for (int i = 0; i < old.Length; i++)
+            {
+              //Don't leave things orphanned with an old dead root.
+              if(old[i].Value == null)
+                predecessors[i] = _Root;
+              else
+                predecessors[i] = old[i];
+            }
+            predecessors[predecessors.Length - 1] = _Root;
+          }
+
+          //rethread
+          Rethread(prevNode, predecessors);
+
+          Count++;
+        }
+
+        //modify values
         Point? l = null;
         if (itemNode.Previous != _Root)
         {
@@ -150,6 +274,8 @@ namespace Geometry
         }
 
         itemNode.Value = new Triple(l, itemNode.Value.Center, r);
+
+        return predecessors;
       }
 
       public override bool Remove(Triple item, out SkipNode<Triple> removed)
@@ -179,7 +305,7 @@ namespace Geometry
       }
     }
 
-    private class BeachLineComparer : IComparer<Triple>
+    public class BeachLineComparer : IComparer<Triple>
     {
       static BeachLineComparer()
       {
@@ -205,51 +331,17 @@ namespace Geometry
         }
         
         var nParabola = new Parabola(n.Center, Directix);
-        
-        double lBound;
-        //if this is the first item, let -infinity be lower bound
-        //otherwise find the intersection w. previous node
-        if (!n.Left.HasValue)
-          lBound = double.NegativeInfinity;
-        else
-        {
-          var prev = new Parabola(n.Left.Value, Directix);
-          var intersections = nParabola.Intersect(prev);
-          if (Parabola.IsNoIntersection(intersections.Item2))
-          {
-            //0-assertfail
-            System.Diagnostics.Debug.Assert(!Parabola.IsNoIntersection(intersections.Item1), 
-              String.Format("No interesections between consecutive items: {0} and {1}", prev, nParabola));
-            
-            lBound = intersections.Item1.X;
-          }
-          else //2, largest 
-            lBound = Math.Max(intersections.Item1.X, intersections.Item2.X);
-        }
+
+        double lBound = n.LeftBound(Directix);
+
         //item < lowerbound? -1
         if(index.Center.X < lBound)
           return -1;
 
         //last item? upper bound is +inifinity
         //otherwise intersection w/ next parabola
-        double uBound;
-        if(!n.Right.HasValue)
-          uBound = double.PositiveInfinity;
-        else
-        {
-          var next = new Parabola(n.Right.Value, Directix);
-          var intersections = nParabola.Intersect(next);
-          if (Parabola.IsNoIntersection(intersections.Item2))
-          {
-            //0-assertfail
-            System.Diagnostics.Debug.Assert(!Parabola.IsNoIntersection(intersections.Item1), 
-              String.Format("No interesections between consecutive items: {0} and {1}", nParabola, next));
-            
-            uBound = intersections.Item1.X;
-          }
-          else
-            uBound = Math.Min(intersections.Item1.X, intersections.Item2.X);
-        }
+        double uBound = n.RightBound(Directix);
+
         //item >= upperbound? +1
         if (index.Center.X >= uBound)
           return 1;
@@ -257,6 +349,8 @@ namespace Geometry
         //we got here? this must be the place.
         return 0;
       }
+
+
     }
 
 

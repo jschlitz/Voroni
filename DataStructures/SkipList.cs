@@ -234,9 +234,48 @@ namespace DataStructures
     /// <summary>
     /// Add an item to the list. Log(n) operation.
     /// </summary>
-    virtual public void  Add(T item, out SkipNode<T> itemNode)
+    virtual public SkipNode<T>[] Add(T item, out SkipNode<T> itemNode)
     {
       //How high is this node?
+      var height = ReadjustHeight();
+
+      //find the one that it goes just after
+      var predecessors = GetPredecessors(item);
+
+      //rethread the references
+      itemNode = new SkipNode<T>(height, item);
+      Rethread(itemNode, predecessors);
+
+      //And now we're bigger.
+      Count++;
+
+      return predecessors;
+    }
+
+    /// <summary>
+    /// rethread the references with this itemNode and array of predecessors
+    /// </summary>
+    protected static void Rethread(SkipNode<T> itemNode, SkipNode<T>[] predecessors)
+    {
+      int height = itemNode.Height;
+      for (int i = 0; i < height; i++)
+      {
+        itemNode[i] = predecessors[i][i];
+        predecessors[i][i] = itemNode;
+      }
+
+      //fix Previouses
+      if (itemNode.Next() != null)
+        itemNode.Next().Previous = itemNode;
+      itemNode.Previous = predecessors[0];
+    }
+
+    /// <summary>
+    /// Get a height for a new node, readjusting the root height if needed.
+    /// </summary>
+    /// <returns></returns>
+    protected int ReadjustHeight()
+    {
       var height = GetHeight();
 
       //see if we have to readjust the root
@@ -249,25 +288,7 @@ namespace DataStructures
         if (_Root.Next() != null)
           _Root.Next().Previous = _Root;
       }
-
-      //find the one that it goes just after
-      var predecessors = GetPredecessors(item);
-
-      //rethread the references
-      itemNode = new SkipNode<T>(height, item);
-      for (int i = 0; i < height; i++)
-      {
-        itemNode[i] = predecessors[i][i];
-        predecessors[i][i] = itemNode;
-      }
-
-      //fix Previouses
-      if(itemNode.Next() != null)
-        itemNode.Next().Previous = itemNode;
-      itemNode.Previous = predecessors[0];
-
-      //And now we're bigger.
-      Count++;
+      return height;
     }
     public bool Remove(T item)
     {
@@ -318,7 +339,7 @@ namespace DataStructures
       return updates;
     }
 
-    private SkipNode<T>[] GetPredecessors(T item)
+    protected SkipNode<T>[] GetPredecessors(T item)
     {
       var predecessors = new SkipNode<T>[_Root.Height];
       var current = _Root;
@@ -329,7 +350,7 @@ namespace DataStructures
         //go either til we find it, or the last one at this level that is less than item
         while (current[i] != null &&
                //(Comparer.Compare(item, current[i].Value) >= 0))
-               (Comparer.Compare(item, current[i].Value) > 0))
+               (Comparer.Compare(item, current[i].Value) > 0)) // > is what I had before....
         {
           current = current[i];
         }
