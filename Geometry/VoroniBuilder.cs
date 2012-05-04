@@ -20,9 +20,9 @@ namespace Geometry
     {
       //fill the queue with the initial point events.
       //TODO: this probably changes to something smarter --  we differentiate face events from circle events
-      var pQueue = new SkipList<Point>(PointComparer.Instance);
+      var pQueue = new SkipList<IPointEvent>(PointComparer.Instance);
       var status = new StatusStructure();
-      foreach (var p in points) pQueue.Add(p);
+      foreach (var p in points) pQueue.Add(new FaceEvent(p));
 
       var result = new HalfEdgeStructure();
 
@@ -30,19 +30,36 @@ namespace Geometry
       while (pQueue.Count > 0)
       {
         //dequeue
-        Point item = pQueue.First();
+        IPointEvent item = pQueue.First();
         pQueue.Remove(item);
 
         //new face
-        var newFace = new Face(item);
+        var newFace = new Face(item.P);
         result.Faces.Add(newFace);
 
         //add to status
-        status.Directix = item.Y;
+        status.Directix = item.P.Y;
       }
 
 
       return result;
+    }
+
+    /// <summary>
+    /// An event in the queue
+    /// </summary>
+    public interface IPointEvent
+    {
+      Point P { get; set; }
+    }
+
+    /// <summary>
+    /// An event originating from a site in the diagram
+    /// </summary>
+    public class FaceEvent : IPointEvent
+    {
+      public FaceEvent(Point p) { P = p; }
+      public Point P { get; set; }
     }
 
     public class Triple  
@@ -365,15 +382,15 @@ namespace Geometry
     /// <summary>
     /// Compare 2 points by their Y value, high to low. if they are equal, compare by X, low to high.
     /// </summary>
-    private class PointComparer : IComparer<Point>
+    private class PointComparer : IComparer<IPointEvent>
     {
       public static readonly PointComparer Instance = new PointComparer();
 
-      public int Compare(Point x, Point y)
+      public int Compare(IPointEvent x, IPointEvent y)
       {
-        double result = -1*(x.Y - y.Y);
+        double result = -1 * (x.P.Y - y.P.Y);
         if (result == 0)
-          result = x.X - y.X;//note this is reversed.
+          result = x.P.X - y.P.X;//note this is reversed.
 
         if (result > 0) 
           return 1;
