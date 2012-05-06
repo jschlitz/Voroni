@@ -100,5 +100,79 @@ namespace TestProject1
     {
       return Math.Round(d1, 3) == Math.Round(d2, 3);
     }
+
+    [TestMethod]
+    public void QuickTest()
+    { 
+      Point p1 = new Point(1,2);
+      Point? np1 = new Point(3,4);
+      Point p2 = new Point(5,6);
+      Point p3 = new Point(7,8);
+      var plainQT = new QuickTestClass(p1, p2);
+      plainQT.Sibling = plainQT.StrongClone();
+      plainQT.MaybePoint = new Point(1.1, 2.2);
+      Assert.AreNotEqual(plainQT.MaybePoint.Value.X, plainQT.Sibling.MaybePoint.Value.X);
+      Assert.AreNotEqual(plainQT.MaybePoint.Value.Y, plainQT.Sibling.MaybePoint.Value.Y);
+      p1.Y = 11.11;
+      Assert.AreNotEqual(p1.Y, plainQT.Sibling.MaybePoint.Value.Y);
+      p2.Y = 6.6;
+      Assert.AreNotEqual(p2.Y, plainQT.Sibling.CertainPoint.X);
+      Assert.AreNotEqual(p2.Y, plainQT.CertainPoint.X);
+
+
+      p1 = new Point(1, 2);
+      np1 = new Point(3, 4);
+      p2 = new Point(5, 6);
+      p3 = new Point(7, 8);
+      var nullableQT = new QuickTestClass(np1, p2);
+      nullableQT.Sibling = nullableQT.StrongClone();
+      nullableQT.MaybePoint = new Point(1.1, 2.2);
+      Assert.AreNotEqual(nullableQT.MaybePoint.Value.X, nullableQT.Sibling.MaybePoint.Value.X);
+      Assert.AreNotEqual(nullableQT.MaybePoint.Value.Y, nullableQT.Sibling.MaybePoint.Value.Y);
+      np1 = new Point(np1.Value.X, 11.11);
+      Assert.AreNotEqual(p1.Y, nullableQT.Sibling.MaybePoint.Value.Y);
+      p2.Y = 6.6;
+      Assert.AreNotEqual(p2.Y, nullableQT.Sibling.CertainPoint.X);
+      Assert.AreNotEqual(p2.Y, nullableQT.CertainPoint.X);
+
+    }
+
+
+    public class QuickTestClass : ICloneable
+    {
+      public QuickTestClass(Point mp, Point cp)
+      {
+        MaybePoint = (Point?)mp;
+        CertainPoint = cp;
+        MaybeDouble = mp.X * mp.Y;
+        CertainDouble= cp.X * cp.Y;
+      }
+
+      public QuickTestClass(Point? mp, Point cp)
+      {
+        MaybePoint = mp;
+        CertainPoint = cp;
+        if (mp != null)
+          MaybeDouble = mp.Value.X * mp.Value.Y;
+        CertainDouble = cp.X * cp.Y;
+      }
+
+      public Point? MaybePoint { get; set; }
+      public Point CertainPoint { get; set; }
+      public QuickTestClass Sibling { get; set; }
+      public double? MaybeDouble { get; set; }
+      public double CertainDouble { get; set; }
+
+      public object Clone()
+      {
+        return MemberwiseClone();
+      }
+
+      public QuickTestClass StrongClone()
+      {
+        return (QuickTestClass)Clone();
+      }
+
+    }
   }
 }

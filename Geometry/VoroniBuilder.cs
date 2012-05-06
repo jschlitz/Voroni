@@ -113,13 +113,16 @@ namespace Geometry
 
       public Triple Copy()
       {
-        if (IsIndex)
-          return new Triple(Center);
-        else
-          return new Triple(
-            Left == null ? null : (Point?)Left.Value, 
-            Center, 
-            Right == null ? null : (Point?)Right.Value);
+        //Triple result;
+        //if (IsIndex)
+        //  result = new Triple(Center);
+        //else
+        //  result = new Triple(
+        //    Left == null ? null : (Point?)Left.Value, 
+        //    Center, 
+        //    Right == null ? null : (Point?)Right.Value);
+
+        return (Triple)MemberwiseClone();
       }
       public override string ToString()
       {
