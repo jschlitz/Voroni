@@ -312,8 +312,7 @@ namespace Geometry
           itemNode.Value = new Triple(l, itemNode.Value.Center, r) { MyFace = newFace };
 
           //new edges
-          var newEdge = new HalfEdge() { IncidentFace = newFace };
-          newEdge.Twin = new HalfEdge() { IncidentFace = itemNode.Previous.Value.MyFace };//prev/next are equiv 
+          var newEdge = new HalfEdge(newFace, itemNode.Previous.Value.MyFace);//prev/next are equiv 
           FinalResult.Edges.Add(newEdge);
           FinalResult.Edges.Add(newEdge.Twin);
           itemNode.Value.LeftEdge = newEdge;
@@ -343,9 +342,8 @@ namespace Geometry
               removed.Previous.Value.Right = removed.Next().Value.Center;
               
               //new edgepair
-              var newEdge = new HalfEdge() { IncidentFace = removed.Previous.Value.MyFace };
+              var newEdge = new HalfEdge(removed.Previous.Value.MyFace, removed.Next().Value.MyFace);
               removed.Previous.Value.RightEdge = newEdge;
-              newEdge.Twin = new HalfEdge() { IncidentFace = removed.Next().Value.MyFace };
               removed.Next().Value.LeftEdge = newEdge.Twin;
               FinalResult.Edges.Add(newEdge);
               FinalResult.Edges.Add(newEdge.Twin);

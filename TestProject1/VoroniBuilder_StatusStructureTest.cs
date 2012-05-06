@@ -78,6 +78,8 @@ namespace TestProject1
       {
         Assert.IsNotNull(item.Twin);
         Assert.IsTrue(hes.Edges.Contains(item.Twin));
+        Assert.AreEqual<HalfEdge>(item, item.Twin.Twin);
+        Assert.AreEqual<HalfEdge>(item.Twin, item.Twin.Twin.Twin);
       }
     }
 

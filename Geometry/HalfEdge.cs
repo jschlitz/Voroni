@@ -8,6 +8,27 @@ namespace Geometry
   public class HalfEdge
   {
     /// <summary>
+    /// This will actually make the halfedge and its twin.
+    /// </summary>
+    public HalfEdge(Face incidentFace, Face opposingFace)
+    {
+      System.Diagnostics.Debug.Assert(incidentFace != null);
+      System.Diagnostics.Debug.Assert(opposingFace != null);
+
+      IncidentFace = incidentFace;
+      Twin = new HalfEdge(opposingFace);
+      Twin.Twin = this;
+    }
+
+    /// <summary>
+    /// Only used internally.
+    /// </summary>
+    private HalfEdge(Face incidentFace)
+    {
+      IncidentFace = incidentFace;
+    }
+
+    /// <summary>
     /// Where the edge begins
     /// </summary>
     public Vertex Origin { get; set; }
@@ -15,20 +36,12 @@ namespace Geometry
     /// <summary>
     /// Edge that starts at this one's end, and ends at this one's origin
     /// </summary>
-    public HalfEdge Twin 
-    {
-      get { return _Twin; }
-      set
-      {
-        _Twin = value;
-      }
-    }
-    private HalfEdge _Twin;
+    public HalfEdge Twin { get; protected set; }
 
     /// <summary>
     /// Which face is this touching?
     /// </summary>
-    public Face IncidentFace { get; set; }
+    public Face IncidentFace { get; protected set; }
 
     public HalfEdge Next { get; set; }
 
