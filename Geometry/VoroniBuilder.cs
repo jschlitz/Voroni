@@ -293,23 +293,16 @@ namespace Geometry
 
           //rethread
           Rethread(prevNode, predecessors);
-
           Count++;
 
           //modify values
           Point? l = null;
-          //if (itemNode.Previous != _Root)
-          //{
           itemNode.Previous.Value.Right = (Point?)item.Center;
           l = itemNode.Previous.Value.Center;
-          //}
 
           Point? r = null;
-          //if (itemNode.Next() != null)
-          //{
           itemNode.Next().Value.Left = (Point?)item.Center;
           r = itemNode.Next().Value.Center;
-          //}
 
           System.Diagnostics.Debug.Assert(l==r); // we've bisected an arc. This should be the same! Sanity check.
 
@@ -331,16 +324,6 @@ namespace Geometry
           //set edge for the faces
           newFace.OuterEdge = newEdge;
           itemNode.Previous.Value.MyFace.OuterEdge = newEdge.Twin;
-
-          //TODO: Test that this works, do remove as well.
-
-          //if (l != null)
-          //{
-          //  itemNode.Value.LeftEdge = new HalfEdge();
-          //  itemNode.Value.LeftEdge.
-          //}
-
-          //create edges
         }
 
         return predecessors;
@@ -358,14 +341,36 @@ namespace Geometry
             {
               removed.Next().Value.Left = removed.Previous.Value.Center;
               removed.Previous.Value.Right = removed.Next().Value.Center;
+              
+              //new edgepair
+              var newEdge = new HalfEdge() { IncidentFace = removed.Previous.Value.MyFace };
+              removed.Previous.Value.RightEdge = newEdge;
+              newEdge.Twin = new HalfEdge() { IncidentFace = removed.Next().Value.MyFace };
+              removed.Next().Value.LeftEdge = newEdge.Twin;
+              FinalResult.Edges.Add(newEdge);
+              FinalResult.Edges.Add(newEdge.Twin);
+
+              //edge.nexts?
+              removed.Value.LeftEdge.Next = removed.Value.RightEdge;
+              removed.Value.RightEdge.Twin.Next = removed.Next().Value.LeftEdge;
+              removed.Previous.Value.RightEdge.Next = removed.Value.LeftEdge.Twin;
+
+              //TODO: vertex?
+              
             }
             else
+            {
               removed.Previous.Value.Right = null;
+              removed.Previous.Value.RightEdge = null;
+            }
           }
           else 
           {
             if (removed.Next() != null)
+            {
               removed.Next().Value.Left = null;
+              removed.Next().Value.LeftEdge = null;
+            }
           }
           return true;
         }

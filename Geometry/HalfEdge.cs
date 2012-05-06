@@ -15,7 +15,15 @@ namespace Geometry
     /// <summary>
     /// Edge that starts at this one's end, and ends at this one's origin
     /// </summary>
-    public HalfEdge Twin { get; set; }
+    public HalfEdge Twin 
+    {
+      get { return _Twin; }
+      set
+      {
+        _Twin = value;
+      }
+    }
+    private HalfEdge _Twin;
 
     /// <summary>
     /// Which face is this touching?
@@ -25,5 +33,15 @@ namespace Geometry
     public HalfEdge Next { get; set; }
 
     public HalfEdge Previous { get; set; }
+
+    public override string ToString()
+    {
+      if (IncidentFace == null)
+        return "{eg:noface?!}";
+      else if (Twin == null)
+        return "{eg:" + IncidentFace.ToString() + ", {notwin?!}}";
+      else 
+        return "{eg:" + IncidentFace.ToString() + ", " + Twin.IncidentFace.ToString() + "}";
+    }
   }
 }

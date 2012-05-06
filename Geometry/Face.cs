@@ -19,5 +19,13 @@ namespace Geometry
     public HalfEdge OuterEdge { get; set; }
 
     public Point Site { get; set; }
+
+    public override string ToString()
+    {
+      if (Site != null)
+        return "{fc:" + Site.X.ToString("f2") + "," + Site.Y.ToString("f2") + "}";
+      else
+        return "{fc:nosite?!}";
+    }
   }
 }
