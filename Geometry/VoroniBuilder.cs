@@ -35,10 +35,6 @@ namespace Geometry
 
         if (item is SiteEvent)
         {
-          //new face
-          var newFace = new Face(item.P);
-          result.Faces.Add(newFace);
-
           //add to status
           status.Directix = item.P.Y;
           status.Add(new Triple(item.P));
@@ -109,6 +105,11 @@ namespace Geometry
       /// Edge between center & left. Can be null
       /// </summary>
       public HalfEdge LeftEdge { get; set; }
+
+      /// <summary>
+      /// Face associated with this arc
+      /// </summary>
+      public Face MyFace { get; set; }
 
       public Triple Copy()
       {
@@ -256,7 +257,14 @@ namespace Geometry
         var predecessors = base.Add(item, out itemNode);
 
         //the node we dup is itemnode.Next, and we make it previous. hmm..
-        if (itemNode.Next() != null) //any time but during the first insertion
+        if (itemNode.Next() == null) //only during first insertion
+        {
+          var newFace = new Face(itemNode.Value.Center);
+          FinalResult.Faces.Add(newFace);
+          itemNode.Value = new Triple(null, itemNode.Value.Center, null);
+          itemNode.Value.MyFace = newFace;
+        }
+        else
         {
           var prevNode = new SkipNode<Triple>(ReadjustHeight(), itemNode.Next().Value.Copy());
 
@@ -269,7 +277,7 @@ namespace Geometry
             for (int i = 0; i < old.Length; i++)
             {
               //Don't leave things orphanned with an old dead root.
-              if(old[i].Value == null)
+              if (old[i].Value == null)
                 predecessors[i] = _Root;
               else
                 predecessors[i] = old[i];
@@ -284,31 +292,53 @@ namespace Geometry
           Rethread(prevNode, predecessors);
 
           Count++;
-        }
 
-        //modify values
-        Point? l = null;
-        if (itemNode.Previous != _Root)
-        {
-          itemNode.Previous.Value.Right = (Point?) item.Center;
+          //modify values
+          Point? l = null;
+          //if (itemNode.Previous != _Root)
+          //{
+          itemNode.Previous.Value.Right = (Point?)item.Center;
           l = itemNode.Previous.Value.Center;
-        }
+          //}
 
-        Point? r = null;
-        if (itemNode.Next() != null)
-        {
+          Point? r = null;
+          //if (itemNode.Next() != null)
+          //{
           itemNode.Next().Value.Left = (Point?)item.Center;
           r = itemNode.Next().Value.Center;
+          //}
+
+          System.Diagnostics.Debug.Assert(l==r); // we've bisected an arc. This should be the same! Sanity check.
+
+          //new face!
+          var newFace = new Face(itemNode.Value.Center);
+          FinalResult.Faces.Add(newFace);
+          itemNode.Value = new Triple(l, itemNode.Value.Center, r) { MyFace = newFace };
+
+          //new edges
+          var newEdge = new HalfEdge() { IncidentFace = newFace };
+          newEdge.Twin = new HalfEdge() { IncidentFace = itemNode.Previous.Value.MyFace };//prev/next are equiv 
+          FinalResult.Edges.Add(newEdge);
+          FinalResult.Edges.Add(newEdge.Twin);
+          itemNode.Value.LeftEdge = newEdge;
+          itemNode.Value.RightEdge = newEdge;
+          itemNode.Previous.Value.RightEdge = newEdge.Twin;
+          itemNode.Next().Value.LeftEdge = newEdge.Twin;
+
+          //set edge for the faces
+          newFace.OuterEdge = newEdge;
+          itemNode.Previous.Value.MyFace.OuterEdge = newEdge.Twin;
+
+          //TODO: Test that this works, do remove as well.
+
+          //if (l != null)
+          //{
+          //  itemNode.Value.LeftEdge = new HalfEdge();
+          //  itemNode.Value.LeftEdge.
+          //}
+
+          //create edges
         }
-
-        itemNode.Value = new Triple(l, itemNode.Value.Center, r);
-        //if (l != null)
-        //{
-        //  itemNode.Value.LeftEdge = new HalfEdge();
-        //  itemNode.Value.LeftEdge.
-        //}
-
-        //create edges
 
         return predecessors;
       }
