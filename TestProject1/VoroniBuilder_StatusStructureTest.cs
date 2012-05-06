@@ -78,7 +78,8 @@ namespace TestProject1
     [TestMethod()]
     public void AddTest()
     {
-      VoroniBuilder.StatusStructure target = new VoroniBuilder.StatusStructure(5261975);
+      var dummy = new HalfEdgeStructure() ;
+      VoroniBuilder.StatusStructure target = new VoroniBuilder.StatusStructure(5261975, dummy);
       SkipNode<VoroniBuilder.Triple> itemNode = null;
 
       target.Directix = P2.Y;

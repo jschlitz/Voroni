@@ -85,13 +85,17 @@ namespace DataStructures
   public class SkipList<T> : ICollection<T>
   {
     #region constructors
+    
     public SkipList(int seed, IComparer<T> c)
     {
-      _Rand = seed > 0 ? new Random(seed) : new Random();
+      _Rand = seed > 0 ? new Random(seed) : new Random(DEFAULT_SEED);
       Comparer = c;
       Count = 0;
       _Root = new SkipNode<T>(1);
     }
+
+    //Debugging things with a random element is a big pain.
+    const int DEFAULT_SEED = 19752605;
 
     public SkipList():this(-1, Comparer<T>.Default)
     {

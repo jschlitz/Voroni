@@ -20,25 +20,30 @@ namespace Geometry
     {
       //fill the queue with the initial point events.
       //TODO: this probably changes to something smarter --  we differentiate face events from circle events
-      var pQueue = new SkipList<IPointEvent>(PointComparer.Instance);
-      var status = new StatusStructure();
-      foreach (var p in points) pQueue.Add(new FaceEvent(p));
-
+      var pQueue = new SkipList<IEvent>(PointComparer.Instance);
       var result = new HalfEdgeStructure();
+      var status = new StatusStructure(result);
+      foreach (var p in points) pQueue.Add(new SiteEvent(p));
+
 
       //until the queue is empty...
       while (pQueue.Count > 0)
       {
         //dequeue
-        IPointEvent item = pQueue.First();
+        IEvent item = pQueue.First();
         pQueue.Remove(item);
 
-        //new face
-        var newFace = new Face(item.P);
-        result.Faces.Add(newFace);
+        if (item is SiteEvent)
+        {
+          //new face
+          var newFace = new Face(item.P);
+          result.Faces.Add(newFace);
 
-        //add to status
-        status.Directix = item.P.Y;
+          //add to status
+          status.Directix = item.P.Y;
+          status.Add(new Triple(item.P));
+
+        }
       }
 
 
@@ -48,7 +53,7 @@ namespace Geometry
     /// <summary>
     /// An event in the queue
     /// </summary>
-    public interface IPointEvent
+    public interface IEvent
     {
       Point P { get; set; }
     }
@@ -56,10 +61,24 @@ namespace Geometry
     /// <summary>
     /// An event originating from a site in the diagram
     /// </summary>
-    public class FaceEvent : IPointEvent
+    public class SiteEvent : IEvent
     {
-      public FaceEvent(Point p) { P = p; }
+      public SiteEvent(Point p) { P = p; }
       public Point P { get; set; }
+    }
+
+    public class CircleEvent : IEvent
+    {
+      public CircleEvent(Triple t)
+      {
+        T = t;
+        //TODO compute circle, get point w/ lowest Y.
+      }
+      public Point P { get; set; }
+      /// <summary>
+      /// Triple, the center of which will vanish when this event hits.
+      /// </summary>
+      public Triple T{get; protected set;}
     }
 
     public class Triple  
@@ -80,6 +99,16 @@ namespace Geometry
         Center = index;
         IsIndex = true;
       }
+      //TODO: CircleEvent where this disappears
+      /// <summary>
+      /// Edge between center & right. Can be null
+      /// </summary>
+      public HalfEdge RightEdge { get; set; }
+
+      /// <summary>
+      /// Edge between center & left. Can be null
+      /// </summary>
+      public HalfEdge LeftEdge { get; set; }
 
       public Triple Copy()
       {
@@ -186,41 +215,29 @@ namespace Geometry
     public  class StatusStructure : SkipList<Triple>
     {
 
-      public StatusStructure() : base(BeachLineComparer.Instance) { }
-      public StatusStructure(int seed) : base(seed, BeachLineComparer.Instance) { }
-      
-      //hide these.
+      #region constructors
+      public StatusStructure(HalfEdgeStructure finalResult) : base(BeachLineComparer.Instance) 
+      {
+        FinalResult = finalResult;
+      }
+      public StatusStructure(int seed, HalfEdgeStructure finalResult) : base(seed, BeachLineComparer.Instance) 
+      {
+        FinalResult = finalResult;
+      }
+      #endregion
+
+      #region hide these
       private StatusStructure(IComparer<Triple> c) : base(BeachLineComparer.Instance) { }
       private StatusStructure(int seed, IComparer<Triple> c) : base(seed, BeachLineComparer.Instance) { }
+      private StatusStructure() : base(BeachLineComparer.Instance) { }
+      private StatusStructure(int seed) : base(seed, BeachLineComparer.Instance) { }
+      #endregion
 
-      //When I extend this for Voroni, I'll have to more explicitly control 
-      //insertions and deletions. It depends on finding node triplets that
-      //are in the right place. I can't just rely on a simple comparer to keep the
-      //right order.
       /// <summary>
-      /// Find the node for which c.Compare() returns 0. If c lt 0, it assumes the 
-      /// tested node is too "small." c gt 0 the tested node is too "big."
+      /// Structure that contains faces, edges and verticies found as we proceed.
       /// </summary>
-      //public SkipNode<Parabola> FindNode(Point item)
-      //{
-      //  var current = _Root;
-
-      //  for (int i = current.Height - 1; i >= 0; i--)
-      //  {
-
-      //    //go either til we find it, or the last one at this level that is less than item
-      //    while (current[i] != null && (Checker(item, current[i]) > 0))
-      //    {
-      //      current = current[i];
-      //    }
-      //  }
-
-      //  if (current != _Root && Checker(item, current) == 0)
-      //    return current;
-      //  else
-      //    return null;
-      //}
-
+      public HalfEdgeStructure FinalResult { get; protected set; }
+      
       private BeachLineComparer BLComparer
       { get {return (BeachLineComparer) Comparer;} }
 
@@ -233,29 +250,12 @@ namespace Geometry
         set { BLComparer.Directix = value; }
       }
 
-      /*
-      //TODO: this subclass needs to use a comparer that operates not on T, but SkipNode<T>. 
-      Probably using something like Checker(). perhaps a dummy SkipNode<T> for the insertion item.
-      or maybe instead of T being the single item, it is a tripple with the preceeding and succeeding 
-      segments
-      Since the comparerer needs 2 items of the same type, maybe mark the new item as a triple that is all the same, 
-      since that can't happen in the real data structure.
-       * 
-       * 
-       * 
-       * 
-       * No wait! I know!
-       * override Add/Remove. the ones with the nodes as output. then, do a fixup on the node's prev & next. 
-       * 
-       * Brilliant!
-      */
       public override SkipNode<Triple>[] Add(Triple item, out SkipNode<Triple> itemNode)
       {
         //some work to set up the node that we'll be inserting before the main one.
         var predecessors = base.Add(item, out itemNode);
 
         //the node we dup is itemnode.Next, and we make it previous. hmm..
-
         if (itemNode.Next() != null) //any time but during the first insertion
         {
           var prevNode = new SkipNode<Triple>(ReadjustHeight(), itemNode.Next().Value.Copy());
@@ -274,7 +274,10 @@ namespace Geometry
               else
                 predecessors[i] = old[i];
             }
-            predecessors[predecessors.Length - 1] = _Root;
+
+            for (int i = old.Length; i < predecessors.Length; i++)
+              predecessors[i] = _Root;
+
           }
 
           //rethread
@@ -299,6 +302,13 @@ namespace Geometry
         }
 
         itemNode.Value = new Triple(l, itemNode.Value.Center, r);
+        //if (l != null)
+        //{
+        //  itemNode.Value.LeftEdge = new HalfEdge();
+        //  itemNode.Value.LeftEdge.
+        //}
+
+        //create edges
 
         return predecessors;
       }
@@ -330,6 +340,9 @@ namespace Geometry
       }
     }
 
+    /// <summary>
+    /// Compare an arc and a ray that wants to bisect an arc
+    /// </summary>
     public class BeachLineComparer : IComparer<Triple>
     {
       static BeachLineComparer()
@@ -382,11 +395,11 @@ namespace Geometry
     /// <summary>
     /// Compare 2 points by their Y value, high to low. if they are equal, compare by X, low to high.
     /// </summary>
-    private class PointComparer : IComparer<IPointEvent>
+    private class PointComparer : IComparer<IEvent>
     {
       public static readonly PointComparer Instance = new PointComparer();
 
-      public int Compare(IPointEvent x, IPointEvent y)
+      public int Compare(IEvent x, IEvent y)
       {
         double result = -1 * (x.P.Y - y.P.Y);
         if (result == 0)
