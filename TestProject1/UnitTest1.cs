@@ -16,9 +16,6 @@ namespace TestProject1
   {
     public UnitTest1()
     {
-      //
-      // TODO: Add constructor logic here
-      //
     }
 
     private TestContext testContextInstance;

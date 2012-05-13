@@ -19,7 +19,6 @@ namespace Geometry
     public static HalfEdgeStructure MakeDiagram(IList<Point> points)
     {
       //fill the queue with the initial point events.
-      //TODO: this probably changes to something smarter --  we differentiate face events from circle events
       var pQueue = new SkipList<IEvent>(PointComparer.Instance);
       var result = new HalfEdgeStructure();
       var status = new StatusStructure(result);
@@ -355,6 +354,7 @@ namespace Geometry
 
               //TODO: vertex?
               
+              //TODO: now to test all of this edge stuff. man.
             }
             else
             {
