@@ -202,7 +202,7 @@ namespace DataStructures
     /// <summary>
     /// Used to compare elements
     /// </summary>
-    public IComparer<T> Comparer { get; protected set; }
+    virtual public IComparer<T> Comparer { get; protected set; }
 
     public override string ToString()
     {

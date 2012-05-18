@@ -47,7 +47,6 @@
     <Compile Include="HalfEdgeStructure.cs" />
     <Compile Include="Parabola.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Utils.cs" />
     <Compile Include="Vertex.cs" />
     <Compile Include="VoroniBuilder.cs" />
   </ItemGroup>

@@ -1,6 +1,7 @@
 ﻿using Geometry;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Linq;
 using System.Windows;
 using DataStructures;
 
@@ -81,6 +82,60 @@ namespace TestProject1
         Assert.AreEqual<HalfEdge>(item, item.Twin.Twin);
         Assert.AreEqual<HalfEdge>(item.Twin, item.Twin.Twin.Twin);
       }
+    }
+
+    [TestMethod]
+    public void RemoveTest()
+    {
+      Point a = new Point(2, 3);//red
+      Point b = new Point(9, 10);//blue
+      Point c = new Point(11, 6);//purple
+      var dummy = new HalfEdgeStructure();
+      VoroniBuilder.StatusStructure target = new VoroniBuilder.StatusStructure(5261975, dummy);
+      SkipNode<VoroniBuilder.Triple> itemNode = null;
+
+      target.Directix = b.Y;
+      target.Add(new VoroniBuilder.Triple(b), out itemNode); // xbx
+      Assert.AreEqual(b, itemNode.Value.Center);
+      Assert.AreEqual(1, target.Count);
+      target.Directix = c.Y;
+      target.Add(new VoroniBuilder.Triple(c), out itemNode); // xbc bcb cbx
+      Assert.AreEqual(b, itemNode.Value.Left);
+      Assert.AreEqual(c, itemNode.Value.Center);
+      Assert.AreEqual(b, itemNode.Value.Right);
+      Assert.AreEqual(3, target.Count);
+      target.Directix = a.Y;
+      target.Add(new VoroniBuilder.Triple(a), out itemNode); // xba bab abc bcb cbx
+      Assert.AreEqual(b, itemNode.Value.Left);
+      Assert.AreEqual(a, itemNode.Value.Center);
+      Assert.AreEqual(b, itemNode.Value.Right);
+      Assert.AreEqual(5, target.Count);
+
+      //now the hard part.
+      target.Directix = 1;
+      VoroniBuilder.Triple nodeToDelete = itemNode.Next().Value; //happens to be the next one in line.
+      target.Remove(nodeToDelete, out itemNode); // xba bac  acb cbx
+      Assert.AreEqual(4, target.Count);
+      Assert.AreEqual(a, itemNode.Value.Left);
+      Assert.AreEqual(b, itemNode.Value.Center);
+      Assert.AreEqual(c, itemNode.Value.Right);
+
+      //hot damn, now check the rest of the list is kosher.
+      var asArray =  target.ToArray();
+      Assert.AreEqual(null, asArray[0].Left);
+      Assert.AreEqual(b, asArray[0].Center);
+      Assert.AreEqual(a, asArray[0].Right);
+      Assert.AreEqual(b, asArray[1].Left);
+      Assert.AreEqual(a, asArray[1].Center);
+      Assert.AreEqual(c, asArray[1].Right);
+      Assert.AreEqual(a, asArray[2].Left);
+      Assert.AreEqual(c, asArray[2].Center);
+      Assert.AreEqual(b, asArray[2].Right);
+      Assert.AreEqual(c, asArray[3].Left);
+      Assert.AreEqual(b, asArray[3].Center);
+      Assert.AreEqual(null, asArray[3].Right);
+
+        
     }
 
     /// <summary>

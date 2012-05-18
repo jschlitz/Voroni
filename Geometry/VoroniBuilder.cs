@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 using DataStructures;
+using System.IO;
 using System.Linq.Expressions;
 
 namespace Geometry
@@ -62,6 +63,9 @@ namespace Geometry
       public Point P { get; set; }
     }
 
+    /// <summary>
+    /// An event for the queue: an arc might dissapear!
+    /// </summary>
     public class CircleEvent : IEvent
     {
       public CircleEvent(Triple t)
@@ -76,6 +80,9 @@ namespace Geometry
       public Triple T{get; protected set;}
     }
 
+    /// <summary>
+    /// Represents an arc, OR a ray striking the arc
+    /// </summary>
     public class Triple  
     {
       public Point? Left { get; set; }
@@ -160,8 +167,13 @@ namespace Geometry
 
             uBound = intersections.Item1.X;
           }
-          else
-            uBound = Math.Min(intersections.Item1.X, intersections.Item2.X);
+          else //2
+          {
+            if (Left == Right) //special case when we're intersecting one on both sides 
+              uBound = Math.Max(intersections.Item1.X, intersections.Item2.X);
+            else 
+              uBound = Math.Min(intersections.Item1.X, intersections.Item2.X);
+          }
         }
         return uBound;
       }
@@ -191,8 +203,13 @@ namespace Geometry
 
             lBound = intersections.Item1.X;
           }
-          else //2, largest 
-            lBound = Math.Max(intersections.Item1.X, intersections.Item2.X);
+          else //2
+          {
+            if (Left == Right) //special case when we're intersecting one on both sides
+              lBound = Math.Min(intersections.Item1.X, intersections.Item2.X);
+            else
+              lBound = Math.Max(intersections.Item1.X, intersections.Item2.X);
+          }
         }
         return lBound;
       }
@@ -215,42 +232,48 @@ namespace Geometry
       }
     }
 
-    public  class StatusStructure : SkipList<Triple>
+    /// <summary>
+    /// a series of parabolic arcs that monotonicly increase in x.
+    /// </summary>
+    public class StatusStructure : SkipList<Triple>
     {
 
       #region constructors
-      public StatusStructure(HalfEdgeStructure finalResult) : base(BeachLineComparer.Instance) 
+      public StatusStructure(HalfEdgeStructure finalResult)
+        : base(StrategicComparer.Instance)
       {
         FinalResult = finalResult;
       }
-      public StatusStructure(int seed, HalfEdgeStructure finalResult) : base(seed, BeachLineComparer.Instance) 
+      public StatusStructure(int seed, HalfEdgeStructure finalResult)
+        : base(seed, StrategicComparer.Instance)
       {
         FinalResult = finalResult;
       }
       #endregion
 
       #region hide these
-      private StatusStructure(IComparer<Triple> c) : base(BeachLineComparer.Instance) { }
-      private StatusStructure(int seed, IComparer<Triple> c) : base(seed, BeachLineComparer.Instance) { }
-      private StatusStructure() : base(BeachLineComparer.Instance) { }
-      private StatusStructure(int seed) : base(seed, BeachLineComparer.Instance) { }
+      private StatusStructure(IComparer<Triple> c) : base(StrategicComparer.Instance) { }
+      private StatusStructure(int seed, IComparer<Triple> c) : base(seed, StrategicComparer.Instance) { }
+      private StatusStructure() : base(StrategicComparer.Instance) { }
+      private StatusStructure(int seed) : base(seed, StrategicComparer.Instance) { }
       #endregion
 
       /// <summary>
       /// Structure that contains faces, edges and verticies found as we proceed.
       /// </summary>
       public HalfEdgeStructure FinalResult { get; protected set; }
-      
-      private BeachLineComparer BLComparer
-      { get {return (BeachLineComparer) Comparer;} }
+
+      private StrategicComparer SComparer
+      { get { return (StrategicComparer)Comparer; } }
+
 
       /// <summary>
       /// The sweep line
       /// </summary>
-      public double Directix 
+      public double Directix
       {
-        get { return BLComparer.Directix; }
-        set { BLComparer.Directix = value; }
+        get { return SComparer.Directix; }
+        set { SComparer.Directix = value; }
       }
 
       public override SkipNode<Triple>[] Add(Triple item, out SkipNode<Triple> itemNode)
@@ -303,7 +326,7 @@ namespace Geometry
           itemNode.Next().Value.Left = (Point?)item.Center;
           r = itemNode.Next().Value.Center;
 
-          System.Diagnostics.Debug.Assert(l==r); // we've bisected an arc. This should be the same! Sanity check.
+          System.Diagnostics.Debug.Assert(l == r); // we've bisected an arc. This should be the same! Sanity check.
 
           //new face!
           var newFace = new Face(itemNode.Value.Center);
@@ -327,9 +350,42 @@ namespace Geometry
         return predecessors;
       }
 
+      #region nix?
+      /// <summary>
+      /// Remove a particular node and (this is the tricky bit) fix up the predecessors
+      /// </summary>
+      //public bool RemoveNode(SkipNode<Triple> toRemove)
+      //{
+      //  var index = new Triple(new Point(toRemove.Value.FindAnX(Directix), Directix));
+      //  SkipNode<Triple> actuallyRemoved;
+      //  if (Remove(index, out actuallyRemoved))
+      //  {
+      //    if (actuallyRemoved != toRemove)
+      //    {
+      //      string tmp =Path.GetTempFileName();
+      //      using (var f = File.CreateText(tmp))
+      //      {
+      //        f.Write("Tried to remove: ");
+      //        f.WriteLine(toRemove.Value.ToString());
+      //        f.Write("Actually removed: ");
+      //        f.WriteLine(actuallyRemoved.ToString());
+      //        f.Write("Directix: ");
+      //        f.WriteLine(Directix);
+
+      //        f.WriteLine(ToString());
+      //      }
+      //      System.Diagnostics.Debug.Assert(false, "Failure in RemovedNode() " + tmp);
+      //    }
+
+      //    return true;
+      //  }
+      //  else
+      //    return false;
+      //}
+      #endregion
+
       public override bool Remove(Triple item, out SkipNode<Triple> removed)
       {
-
         if (base.Remove(item, out removed))
         {
 
@@ -339,7 +395,7 @@ namespace Geometry
             {
               removed.Next().Value.Left = removed.Previous.Value.Center;
               removed.Previous.Value.Right = removed.Next().Value.Center;
-              
+
               //new edgepair
               var newEdge = new HalfEdge(removed.Previous.Value.MyFace, removed.Next().Value.MyFace);
               removed.Previous.Value.RightEdge = newEdge;
@@ -353,7 +409,7 @@ namespace Geometry
               removed.Previous.Value.RightEdge.Next = removed.Value.LeftEdge.Twin;
 
               //TODO: vertex?
-              
+
               //TODO: now to test all of this edge stuff. man.
             }
             else
@@ -362,7 +418,7 @@ namespace Geometry
               removed.Previous.Value.RightEdge = null;
             }
           }
-          else 
+          else
           {
             if (removed.Next() != null)
             {
@@ -374,6 +430,45 @@ namespace Geometry
         }
         return false;
       }
+    }
+
+    /// <summary>
+    /// If the first argument to the comparer has IsIndex == true, we use 
+    /// BeachLineComparer. Otherwise we use ArcComparer
+    /// </summary>
+    public class StrategicComparer : IComparer<Triple>
+    {
+
+      static StrategicComparer()
+      {
+        Instance = new StrategicComparer();
+      }
+
+      public static StrategicComparer Instance;
+
+
+      public int Compare(Triple x, Triple y)
+      {
+        if (x.IsIndex)
+          return BeachLineComparer.Instance.Compare(x, y);
+        else
+          return ArcComparer.Instance.Compare(x, y);
+      }
+
+      /// <summary>
+      /// The sweep line
+      /// </summary>
+      public double Directix 
+      {
+        get { return _Directix; }
+        set 
+        {
+          _Directix = value;
+          BeachLineComparer.Instance.Directix = _Directix;
+          ArcComparer.Instance.Directix = _Directix;
+        }
+      }
+      public double _Directix;
     }
 
     /// <summary>
@@ -399,33 +494,71 @@ namespace Geometry
         if(!index.IsIndex)
         {
           System.Diagnostics.Debug.Assert(n.IsIndex, "BeachLineComparer.Compare called without an index triplet");
-          var tmp = n;
-          n = index;
-          index = tmp;
         }
         
         var nParabola = new Parabola(n.Center, Directix);
 
         double lBound = n.LeftBound(Directix);
 
-        //item < lowerbound? -1
-        if(index.Center.X < lBound)
-          return -1;
-
         //last item? upper bound is +inifinity
         //otherwise intersection w/ next parabola
         double uBound = n.RightBound(Directix);
 
-        //item >= upperbound? +1
-        if (index.Center.X >= uBound)
+        //TODO: for some reason this blows up the add test
+        //special case: if lbound >= uBound, we've collapsed. 
+        //OR THERE IS A RAY INTERSECTING THE POLYGON ELSEWHERE. DAMMIT.
+        //if (lBound >= uBound)
+        //  return 0;
+
+        //.000 000 03
+
+        //item < lowerbound? -1
+        if(index.Center.X < lBound)
+          return -1;
+
+
+        //item > upperbound? +1
+        if (index.Center.X > uBound)
           return 1;
 
         //we got here? this must be the place.
         return 0;
       }
-
-
     }
+
+    /// <summary>
+    /// Look for a particular arc. If you don't find it, is the given arc left (-1) or right (+1) of it?
+    /// </summary>
+    public class ArcComparer : IComparer<Triple>
+    {
+      static ArcComparer()
+      {
+        Instance = new ArcComparer();
+      }
+
+      public static ArcComparer Instance;
+
+      /// <summary>
+      /// The sweep line
+      /// </summary>
+      public double Directix { get; set; }
+
+      public int Compare(Triple target, Triple n)
+      {
+        //swap if needed.
+        if (target.IsIndex)
+        {
+          System.Diagnostics.Debug.Assert(n.IsIndex, "ArcComparer.Compare called by index triplet. did you mean to use BeachLineComparer?");
+        }
+
+        if (target == n)
+          return 0;
+        {
+          return target.FindAnX(Directix) - n.FindAnX(Directix) < 0 ? -1 : 1;
+        }
+      }
+    }
+
 
 
     /// <summary>
