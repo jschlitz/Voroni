@@ -141,7 +141,7 @@ namespace TestProject1
     /// <summary>
     ///A test for Add
     ///</summary>
-    [TestMethod()]
+    [TestMethod]
     public void AddTest()
     {
       var dummy = new HalfEdgeStructure() ;

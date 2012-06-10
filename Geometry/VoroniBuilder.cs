@@ -37,13 +37,46 @@ namespace Geometry
         {
           //add to status
           status.Directix = item.P.Y;
-          status.Add(new Triple(item.P));
 
+          SkipNode<Triple> addedNode;
+          status.Add(new Triple(item.P), out addedNode);
+
+          //Add circle events for the left and right arcs
+          AddCircleEvent(pQueue, status.Directix, addedNode.Previous);
+          AddCircleEvent(pQueue, status.Directix, addedNode.Next());
         }
       }
 
-
       return result;
+    }
+
+    private static void AddCircleEvent(SkipList<IEvent> pQueue, double directix, SkipNode<Triple> centerNode)
+    {
+      if (pQueue == null) throw new ArgumentNullException("pQueue");
+
+      
+      if (centerNode == null) return;
+      var arc = centerNode.Value;
+
+      //assert !null, has value, is not index...
+      if (arc.Left.HasValue && arc.Right.HasValue &&
+        (arc.Right.Value != arc.Left.Value) && (arc.Center != arc.Left.Value) &&
+        (arc.Right.Value != arc.Center))
+      {
+        var c = new Circle(arc.Left.Value, arc.Center, arc.Right.Value);
+        if (c.Center.Y + c.Radius >= directix)
+        {
+          //point ce at node
+          var ce = new CircleEvent(centerNode, new Point(c.Center.X, c.Center.Y + c.Radius));
+
+          //point node.value at ce
+          if (arc.VanishEvent != null)
+            pQueue.Remove(arc.VanishEvent);
+          arc.VanishEvent = ce;
+
+          pQueue.Add(ce);
+        }
+      }
     }
 
     /// <summary>
@@ -61,6 +94,10 @@ namespace Geometry
     {
       public SiteEvent(Point p) { P = p; }
       public Point P { get; set; }
+      public override string ToString()
+      {
+        return string.Format("Site:({0})", P.ToString());
+      }
     }
 
     /// <summary>
@@ -68,16 +105,21 @@ namespace Geometry
     /// </summary>
     public class CircleEvent : IEvent
     {
-      public CircleEvent(Triple t)
+      public CircleEvent(SkipNode<Triple> t, Point p)
       {
-        T = t;
-        //TODO compute circle, get point w/ lowest Y.
+        TargetTripleNode = t;
+        P = p;
       }
-      public Point P { get; set; }
+      public Point P { get;  set; }
       /// <summary>
-      /// Triple, the center of which will vanish when this event hits.
+      /// The node corresponding to the arc we may delete.
       /// </summary>
-      public Triple T{get; protected set;}
+      public SkipNode<Triple> TargetTripleNode { get; set; }
+      public override string ToString()
+      {
+        return string.Format("Circle:({0} - {1})", P.ToString(), TargetTripleNode.Value.ToString());
+      }
+
     }
 
     /// <summary>
@@ -89,6 +131,10 @@ namespace Geometry
       public Point? Right { get; set; }
       public Point Center { get; set; }
       public bool IsIndex { get; private set; }
+      /// <summary>
+      /// Event where this arc may vanish
+      /// </summary>
+      public CircleEvent VanishEvent { get; set; }
       public Triple(Point? l, Point c, Point? r)
       {
         Left = l;
@@ -558,7 +604,6 @@ namespace Geometry
         }
       }
     }
-
 
 
     /// <summary>
