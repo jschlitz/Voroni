@@ -45,9 +45,37 @@ namespace Geometry
           AddCircleEvent(pQueue, status.Directix, addedNode.Previous);
           AddCircleEvent(pQueue, status.Directix, addedNode.Next());
         }
+        else if (item is CircleEvent)
+        {
+          var ce = item as CircleEvent;
+          //drop the Triple
+          status.Remove(ce.TargetTripleNode.Value);
+
+          //drop any circleEvents involving this Triple
+          DropRelatedCircleEvents(pQueue, ce.TargetTripleNode.Previous);
+          DropRelatedCircleEvents(pQueue, ce.TargetTripleNode.Next());
+
+          //TODO: possibly the above calls are redundant due to these. But I 
+          //think there is something subtle that requires the calls DropRelatedCircleEvents.
+          AddCircleEvent(pQueue, status.Directix, ce.TargetTripleNode.Previous);
+          AddCircleEvent(pQueue, status.Directix, ce.TargetTripleNode.Next());
+        }
+        else System.Diagnostics.Debug.Assert(false, "pQueue had non-circle, non-site event.");
       }
 
       return result;
+    }
+
+    private static void DropRelatedCircleEvents(SkipList<IEvent> pQueue, SkipNode<Triple> skipNode)
+    {
+      if (pQueue == null) throw new ArgumentNullException("PQueue");
+      if (skipNode == null) return;
+      if (skipNode.Value == null) return;
+      if (skipNode.Value.IsIndex) throw new ArgumentException("skipNode.IsIndex is true", "skipNode");
+      if (skipNode.Value.VanishEvent == null) return;
+
+      pQueue.Remove(skipNode.Value.VanishEvent);
+      skipNode.Value.VanishEvent = null;
     }
 
     private static void AddCircleEvent(SkipList<IEvent> pQueue, double directix, SkipNode<Triple> centerNode)
@@ -68,9 +96,9 @@ namespace Geometry
         if (c.Center.Y + c.Radius >= directix)
         {
           //point ce at node
-          var ce = new CircleEvent(centerNode, new Point(c.Center.X, c.Center.Y + c.Radius));
+          var ce = new CircleEvent(centerNode, c);
 
-          //point node.value at ce
+          //point node.value at ce (I was considering removing the even regardless, but that does not seem to be correct. We'll see in testing.)
           if (arc.VanishEvent != null)
             pQueue.Remove(arc.VanishEvent);
           arc.VanishEvent = ce;
@@ -106,11 +134,13 @@ namespace Geometry
     /// </summary>
     public class CircleEvent : IEvent
     {
-      public CircleEvent(SkipNode<Triple> t, Point p)
+      public CircleEvent(SkipNode<Triple> t, Circle c)
       {
         TargetTripleNode = t;
-        P = p;
+        C = c;
+        P = new Point(c.Center.X, c.Center.Y + c.Radius);
       }
+      public Circle C { get; protected set; }
       public Point P { get;  set; }
       /// <summary>
       /// The node corresponding to the arc we may delete.
@@ -456,6 +486,7 @@ namespace Geometry
               removed.Previous.Value.RightEdge.Next = removed.Value.LeftEdge.Twin;
 
               //TODO: vertex?
+              //item.VanishEvent.C.Center...
 
               //TODO: now to test all of this edge stuff. man.
             }

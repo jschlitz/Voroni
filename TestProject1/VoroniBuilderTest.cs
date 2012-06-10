@@ -1,8 +1,11 @@
 ﻿using Geometry;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Text;
 using System.Windows;
+using System.Linq;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace TestProject1
 {
@@ -91,6 +94,62 @@ namespace TestProject1
           (f.Site.Y < prev.Y) ||
           ((f.Site.Y == prev.Y) && (f.Site.X >= prev.X)));
         prev = f.Site;
+      }
+    }
+
+    [TestMethod]
+    public void TestCircleRemovals()
+    {
+      var myListener = new TestTraceListener();
+      try
+      {
+        Trace.Listeners.Add(myListener);
+
+        var points = new[] { 
+        new Point(2, 6), new Point(5, 7), 
+        new Point(6, 2), new Point(9, 1) };
+
+
+        Trace.WriteLine("Wibble");
+        Trace.WriteLine("Wobble");
+        Trace.WriteLine("Bop!");
+        Trace.TraceInformation("Information!");
+        //TODO use Trace events to emit this info. Otherwise I have to wait until the end to debug. Ew.
+        //as we go through, the arc structure should be:
+        //0, 010, 01020, 01 20, 01 2420, 01 24 0
+        //System.Diagnostics.Trace.Listeners.Add
+        Assert.IsTrue(myListener.GetTrace().Contains("Wibble"));
+
+      }
+      finally
+      {
+        Trace.Listeners.Remove(myListener);
+      }
+    }
+
+    private class TestTraceListener : TraceListener
+    {
+      StringBuilder Buffer = new StringBuilder();
+      string[] Cache;
+
+      public override void Write(string message)
+      {
+        Cache = null;
+        Buffer.Append(message);
+      }
+
+      public override void WriteLine(string message)
+      {
+        Cache = null;
+        Buffer.AppendLine(message);
+      }
+
+      public string[] GetTrace()
+      {
+        if (Cache == null)
+          Cache = Buffer.ToString().Split(new[] { Environment.NewLine },StringSplitOptions.None);
+
+        return Cache;
       }
     }
   }

@@ -1,5 +1,5 @@
 ﻿X Verify that I'm swapping out the comparer as I believe I am.
-* Use the tested circle code to compute the event point, and add it to the PQueue
+X Use the tested circle code to compute the event point, and add it to the PQueue
 * Process the circle event, vanishing an arc.
   * Add edges
   * Add Verticies
