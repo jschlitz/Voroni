@@ -53,10 +53,11 @@ namespace Geometry
     private static void AddCircleEvent(SkipList<IEvent> pQueue, double directix, SkipNode<Triple> centerNode)
     {
       if (pQueue == null) throw new ArgumentNullException("pQueue");
-
       
       if (centerNode == null) return;
       var arc = centerNode.Value;
+
+      if (arc == null) return;//should only happen for the 1st node.
 
       //assert !null, has value, is not index...
       if (arc.Left.HasValue && arc.Right.HasValue &&
