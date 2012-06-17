@@ -32,6 +32,7 @@ namespace Geometry
         //dequeue
         IEvent item = pQueue.First();
         pQueue.Remove(item);
+        System.Diagnostics.Trace.WriteLine("Dequeued " + item);
 
         if (item is SiteEvent)
         {
@@ -39,6 +40,7 @@ namespace Geometry
           status.Directix = item.P.Y;
 
           SkipNode<Triple> addedNode;
+          //TODO: some special handling when we have initial points that are colinear on the same Y.
           status.Add(new Triple(item.P), out addedNode);
 
           //Add circle events for the left and right arcs
@@ -57,8 +59,8 @@ namespace Geometry
 
           //TODO: possibly the above calls are redundant due to these. But I 
           //think there is something subtle that requires the calls DropRelatedCircleEvents.
-          AddCircleEvent(pQueue, status.Directix, ce.TargetTripleNode.Previous);
-          AddCircleEvent(pQueue, status.Directix, ce.TargetTripleNode.Next());
+          AddCircleEvent(pQueue, ce.P.Y, ce.TargetTripleNode.Previous);
+          AddCircleEvent(pQueue, ce.P.Y, ce.TargetTripleNode.Next());
         }
         else System.Diagnostics.Debug.Assert(false, "pQueue had non-circle, non-site event.");
       }
@@ -75,10 +77,11 @@ namespace Geometry
       if (skipNode.Value.VanishEvent == null) return;
 
       pQueue.Remove(skipNode.Value.VanishEvent);
+      System.Diagnostics.Trace.WriteLine("Removed " + skipNode.Value.VanishEvent);
       skipNode.Value.VanishEvent = null;
     }
 
-    private static void AddCircleEvent(SkipList<IEvent> pQueue, double directix, SkipNode<Triple> centerNode)
+    private static void AddCircleEvent(SkipList<IEvent> pQueue, double cutoffY, SkipNode<Triple> centerNode)
     {
       if (pQueue == null) throw new ArgumentNullException("pQueue");
       
@@ -93,17 +96,22 @@ namespace Geometry
         (arc.Right.Value != arc.Center))
       {
         var c = new Circle(arc.Left.Value, arc.Center, arc.Right.Value);
-        if (c.Center.Y + c.Radius >= directix)
+        if (c.Center.Y - c.Radius < cutoffY) //TODO: worried what happens when  we have 4 co-circular points
         {
           //point ce at node
           var ce = new CircleEvent(centerNode, c);
 
           //point node.value at ce (I was considering removing the even regardless, but that does not seem to be correct. We'll see in testing.)
           if (arc.VanishEvent != null)
+          {
             pQueue.Remove(arc.VanishEvent);
+            System.Diagnostics.Trace.WriteLine("Removed " + arc.VanishEvent);
+          }
           arc.VanishEvent = ce;
 
           pQueue.Add(ce);
+          System.Diagnostics.Trace.WriteLine("Enqueued " + ce);
+
         }
       }
     }
@@ -138,7 +146,7 @@ namespace Geometry
       {
         TargetTripleNode = t;
         C = c;
-        P = new Point(c.Center.X, c.Center.Y + c.Radius);
+        P = new Point(c.Center.X, c.Center.Y - c.Radius);
       }
       public Circle C { get; protected set; }
       public Point P { get;  set; }

@@ -106,19 +106,15 @@ namespace TestProject1
         Trace.Listeners.Add(myListener);
 
         var points = new[] { 
-        new Point(2, 6), new Point(5, 7), 
-        new Point(6, 2), new Point(9, 1) };
+          new Point(2, 6), new Point(5, 7), new Point(6, 2), new Point(9, 1) };
 
-
-        Trace.WriteLine("Wibble");
-        Trace.WriteLine("Wobble");
-        Trace.WriteLine("Bop!");
-        Trace.TraceInformation("Information!");
+        VoroniBuilder.MakeDiagram(points);
+        var theTrace = myListener.GetTrace();
+        
         //TODO use Trace events to emit this info. Otherwise I have to wait until the end to debug. Ew.
         //as we go through, the arc structure should be:
         //0, 010, 01020, 01 20, 01 2420, 01 24 0
         //System.Diagnostics.Trace.Listeners.Add
-        Assert.IsTrue(myListener.GetTrace().Contains("Wibble"));
 
       }
       finally
