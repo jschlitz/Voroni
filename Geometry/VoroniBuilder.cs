@@ -65,6 +65,7 @@ namespace Geometry
         else System.Diagnostics.Debug.Assert(false, "pQueue had non-circle, non-site event.");
       }
 
+      System.Diagnostics.Trace.WriteLine("Final: " + status);
       return result;
     }
 
@@ -84,35 +85,40 @@ namespace Geometry
     private static void AddCircleEvent(SkipList<IEvent> pQueue, double cutoffY, SkipNode<Triple> centerNode)
     {
       if (pQueue == null) throw new ArgumentNullException("pQueue");
-      
+
       if (centerNode == null) return;
       var arc = centerNode.Value;
 
       if (arc == null) return;//should only happen for the 1st node.
 
       //assert !null, has value, is not index...
-      if (arc.Left.HasValue && arc.Right.HasValue &&
-        (arc.Right.Value != arc.Left.Value) && (arc.Center != arc.Left.Value) &&
-        (arc.Right.Value != arc.Center))
+      if (!arc.Left.HasValue || !arc.Right.HasValue) return;
+      if (arc.Right.Value == arc.Left.Value) return;
+      if (arc.Center == arc.Left.Value) return;
+      if (arc.Right.Value == arc.Center) return;
+
+      //CHECK CONVERGENCE L->C->R MUST BE CLOCKWISE.
+      var lc = arc.Center - arc.Left.Value;
+      var cr = arc.Right.Value - arc.Left.Value;
+      if (Vector.CrossProduct(lc, cr) >= 0) return;
+
+      var c = new Circle(arc.Left.Value, arc.Center, arc.Right.Value);
+      if (c.Center.Y - c.Radius < cutoffY) //TODO: worried what happens when  we have 4 co-circular points
       {
-        var c = new Circle(arc.Left.Value, arc.Center, arc.Right.Value);
-        if (c.Center.Y - c.Radius < cutoffY) //TODO: worried what happens when  we have 4 co-circular points
+        //point ce at node
+        var ce = new CircleEvent(centerNode, c);
+
+        //point node.value at ce (I was considering removing the even regardless, but that does not seem to be correct. We'll see in testing.)
+        if (arc.VanishEvent != null)
         {
-          //point ce at node
-          var ce = new CircleEvent(centerNode, c);
-
-          //point node.value at ce (I was considering removing the even regardless, but that does not seem to be correct. We'll see in testing.)
-          if (arc.VanishEvent != null)
-          {
-            pQueue.Remove(arc.VanishEvent);
-            System.Diagnostics.Trace.WriteLine("Removed " + arc.VanishEvent);
-          }
-          arc.VanishEvent = ce;
-
-          pQueue.Add(ce);
-          System.Diagnostics.Trace.WriteLine("Enqueued " + ce);
-
+          pQueue.Remove(arc.VanishEvent);
+          System.Diagnostics.Trace.WriteLine("Removed " + arc.VanishEvent);
         }
+        arc.VanishEvent = ce;
+
+        pQueue.Add(ce);
+        System.Diagnostics.Trace.WriteLine("Enqueued " + ce);
+
       }
     }
 
