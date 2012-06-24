@@ -296,6 +296,8 @@ namespace Geometry
           }
           else //2
           {
+            //TODO: This is just wrong... What is right?
+
             if (Left == Right) //special case when we're intersecting one on both sides
               lBound = Math.Min(intersections.Item1.X, intersections.Item2.X);
             else

@@ -114,13 +114,28 @@ namespace TestProject1
         //TODO use Trace events to emit this info. Otherwise I have to wait until the end to debug. Ew.
         //as we go through, the arc structure should be:
         //0, 010, 01020, 01 20, 01 2420, 01 24 0
-        //System.Diagnostics.Trace.Listeners.Add
-
+        var expected = new [] {"Dequeued Site:(5,7)",
+"Dequeued Site:(2,6)",
+"Dequeued Site:(6,2)",
+"Enqueued Circle:(4.25,1.39956143725216 - (2,6)[5,7](6,2))",
+"Dequeued Circle:(4.25,1.39956143725216 - (2,6)[5,7](6,2))",
+"Dequeued Site:(9,1)",
+"Enqueued Circle:(8.71428571428571,0.990159470357534 - (9,1)[6,2](5,7))",
+"Dequeued Circle:(8.71428571428571,0.990159470357534 - (9,1)[6,2](5,7))",
+"Final: H:1V:(x)[5,7](2,6), H:1V:(5,7)[2,6](6,2), H:1V:(2,6)[6,2](9,1), H:1V:(6,2)[9,1](5,7), H:1V:(9,1)[5,7](x),",
+};
+        //perhaps there are extra things in the trace. But we should have all of expected[] in order
+        int i = 0;
+        foreach (var actual in theTrace)
+        {
+          if (i>=expected.Length) break;
+          if(actual.StartsWith(expected[i]))
+            i++;
+        }
+        Assert.AreEqual(i, expected.Length);
       }
       finally
-      {
-        Trace.Listeners.Remove(myListener);
-      }
+      {        Trace.Listeners.Remove(myListener);      }
     }
 
     private class TestTraceListener : TraceListener
