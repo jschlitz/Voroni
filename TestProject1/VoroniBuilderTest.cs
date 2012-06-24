@@ -120,8 +120,8 @@ namespace TestProject1
 "Enqueued Circle:(4.25,1.39956143725216 - (2,6)[5,7](6,2))",
 "Dequeued Circle:(4.25,1.39956143725216 - (2,6)[5,7](6,2))",
 "Dequeued Site:(9,1)",
-"Enqueued Circle:(8.71428571428571,0.990159470357534 - (9,1)[6,2](5,7))",
-"Dequeued Circle:(8.71428571428571,0.990159470357534 - (9,1)[6,2](5,7))",
+"Enqueued Circle:(8.71428571428571,0.990159470357534 - (6,2)[5,7](9,1))",
+"Dequeued Circle:(8.71428571428571,0.990159470357534 - (6,2)[5,7](9,1))",
 "Final: H:1V:(x)[5,7](2,6), H:1V:(5,7)[2,6](6,2), H:1V:(2,6)[6,2](9,1), H:1V:(6,2)[9,1](5,7), H:1V:(9,1)[5,7](x),",
 };
         //perhaps there are extra things in the trace. But we should have all of expected[] in order

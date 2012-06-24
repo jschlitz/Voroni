@@ -260,10 +260,14 @@ namespace Geometry
           }
           else //2
           {
-            if (Left == Right) //special case when we're intersecting one on both sides 
-              uBound = Math.Max(intersections.Item1.X, intersections.Item2.X);
-            else 
-              uBound = Math.Min(intersections.Item1.X, intersections.Item2.X);
+            //This probably has the same problem as LeftBound...
+            //if (Left == Right) //special case when we're intersecting one on both sides 
+            //  uBound = Math.Max(intersections.Item1.X, intersections.Item2.X);
+            //else 
+            //  uBound = Math.Min(intersections.Item1.X, intersections.Item2.X);
+            uBound = (Center.Y >= Right.Value.Y) ?
+              Math.Min(intersections.Item1.X, intersections.Item2.X) :
+              Math.Max(intersections.Item1.X, intersections.Item2.X);
           }
         }
         return uBound;
@@ -297,11 +301,13 @@ namespace Geometry
           else //2
           {
             //TODO: This is just wrong... What is right?
-
-            if (Left == Right) //special case when we're intersecting one on both sides
-              lBound = Math.Min(intersections.Item1.X, intersections.Item2.X);
-            else
-              lBound = Math.Max(intersections.Item1.X, intersections.Item2.X);
+            //if (Left == Right) //special case when we're intersecting one on both sides
+            //  lBound = Math.Min(intersections.Item1.X, intersections.Item2.X);
+            //else
+            //  lBound = Math.Max(intersections.Item1.X, intersections.Item2.X);
+            lBound = (Center.Y <= Left.Value.Y) ?
+              Math.Min(intersections.Item1.X, intersections.Item2.X) :
+              Math.Max(intersections.Item1.X, intersections.Item2.X);
           }
         }
         return lBound;
