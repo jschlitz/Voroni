@@ -108,7 +108,7 @@ namespace TestProject1
         var points = new[] { 
           new Point(2, 6), new Point(5, 7), new Point(6, 2), new Point(9, 1) };
 
-        VoroniBuilder.MakeDiagram(points);
+        var edgeGraph = VoroniBuilder.MakeDiagram(points);
         var theTrace = myListener.GetTrace();
         
         //TODO use Trace events to emit this info. Otherwise I have to wait until the end to debug. Ew.

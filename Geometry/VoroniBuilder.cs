@@ -65,8 +65,16 @@ namespace Geometry
         else System.Diagnostics.Debug.Assert(false, "pQueue had non-circle, non-site event.");
       }
 
+      AddBoundingBox(points, result);
+
       System.Diagnostics.Trace.WriteLine("Final: " + status);
       return result;
+    }
+
+    private static void AddBoundingBox(IList<Point> points, HalfEdgeStructure result)
+    {
+      //maxes and mins
+
     }
 
     private static void DropRelatedCircleEvents(SkipList<IEvent> pQueue, SkipNode<Triple> skipNode)
@@ -80,6 +88,21 @@ namespace Geometry
       pQueue.Remove(skipNode.Value.VanishEvent);
       System.Diagnostics.Trace.WriteLine("Removed " + skipNode.Value.VanishEvent);
       skipNode.Value.VanishEvent = null;
+    }
+
+    private enum PointIs {Left, On, Right};
+    private static PointIs CheckPoint(Point segStart, Point segEnd, Point p)
+    {
+      var seg = segEnd - segStart;
+      var pVec = p - segStart;
+      var cp = Vector.CrossProduct(seg, pVec);
+
+      if (cp == 0)
+        return PointIs.On;
+      else if (cp > 0)
+        return PointIs.Left;
+      else //if (cp < 0)
+        return PointIs.Right;
     }
 
     private static void AddCircleEvent(SkipList<IEvent> pQueue, double cutoffY, SkipNode<Triple> centerNode)
@@ -97,10 +120,12 @@ namespace Geometry
       if (arc.Center == arc.Left.Value) return;
       if (arc.Right.Value == arc.Center) return;
 
-      //CHECK CONVERGENCE L->C->R MUST BE CLOCKWISE.
+      //CHECK CONVERGENCE L->C->R MUST BE CLOCKWISE. (r right of lc)
+//      if (CheckPoint(arc.Left.Value, arc.Center, arc.Right.Value) != PointIs.Right) return;
+
       var lc = arc.Center - arc.Left.Value;
-      var cr = arc.Right.Value - arc.Left.Value;
-      if (Vector.CrossProduct(lc, cr) >= 0) return;
+      var lr = arc.Right.Value - arc.Left.Value;
+      if (Vector.CrossProduct(lc, lr) >= 0) return;
 
       var c = new Circle(arc.Left.Value, arc.Center, arc.Right.Value);
       if (c.Center.Y - c.Radius < cutoffY) //TODO: worried what happens when  we have 4 co-circular points
@@ -237,7 +262,7 @@ namespace Geometry
       }
 
       /// <summary>
-      /// givent the parabolas described by Center & Right (and the directix) 
+      /// givent the parabolas described by Center and Right (and the directix) 
       /// find the boundry intersection
       /// </summary>
       public double RightBound(double directix)
@@ -495,6 +520,12 @@ namespace Geometry
               removed.Next().Value.Left = removed.Previous.Value.Center;
               removed.Previous.Value.Right = removed.Next().Value.Center;
 
+              //TODO: vertex?
+              var v = new Vertex{Coordinates = item.VanishEvent.C.Center};
+              //v.IncidentEdge = ...
+              FinalResult.Verticies.Add(v);
+              //item.VanishEvent.C.Center...
+
               //new edgepair
               var newEdge = new HalfEdge(removed.Previous.Value.MyFace, removed.Next().Value.MyFace);
               removed.Previous.Value.RightEdge = newEdge;
@@ -502,13 +533,17 @@ namespace Geometry
               FinalResult.Edges.Add(newEdge);
               FinalResult.Edges.Add(newEdge.Twin);
 
-              //edge.nexts?
+              //hook up vertex to edges
+              newEdge.Twin.Origin = v;
+              v.IncidentEdge = newEdge.Twin;
+              //previous edges gets an origins too
+              removed.Value.RightEdge.Origin = v;
+              removed.Value.LeftEdge.Twin.Origin = v;
+
+              //edge.nexts.
               removed.Value.LeftEdge.Next = removed.Value.RightEdge;
               removed.Value.RightEdge.Twin.Next = removed.Next().Value.LeftEdge;
               removed.Previous.Value.RightEdge.Next = removed.Value.LeftEdge.Twin;
-
-              //TODO: vertex?
-              //item.VanishEvent.C.Center...
 
               //TODO: now to test all of this edge stuff. man.
             }
