@@ -121,11 +121,7 @@ namespace Geometry
       if (arc.Right.Value == arc.Center) return;
 
       //CHECK CONVERGENCE L->C->R MUST BE CLOCKWISE. (r right of lc)
-//      if (CheckPoint(arc.Left.Value, arc.Center, arc.Right.Value) != PointIs.Right) return;
-
-      var lc = arc.Center - arc.Left.Value;
-      var lr = arc.Right.Value - arc.Left.Value;
-      if (Vector.CrossProduct(lc, lr) >= 0) return;
+      if (CheckPoint(arc.Left.Value, arc.Center, arc.Right.Value) != PointIs.Right) return;
 
       var c = new Circle(arc.Left.Value, arc.Center, arc.Right.Value);
       if (c.Center.Y - c.Radius < cutoffY) //TODO: worried what happens when  we have 4 co-circular points

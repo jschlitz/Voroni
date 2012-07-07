@@ -114,6 +114,7 @@ namespace TestProject1
       //now the hard part.
       target.Directix = 1;
       VoroniBuilder.Triple nodeToDelete = itemNode.Next().Value; //happens to be the next one in line.
+      nodeToDelete.VanishEvent = new VoroniBuilder.CircleEvent(itemNode.Next(), new Circle(a, b, c));
       target.Remove(nodeToDelete, out itemNode); // xba bac  acb cbx
       Assert.AreEqual(4, target.Count);
       Assert.AreEqual(a, itemNode.Value.Left);
@@ -211,22 +212,6 @@ namespace TestProject1
       Assert.AreEqual(null, itemNode.Next().Value.Right);
       Assert.AreEqual(9, target.Count);
       AssertEdgeTwins(dummy);
-
-      //in the real app, we'll be removing by direct reference. Still. this ought to work.
-      double removeAtX = (new VoroniBuilder.Triple(P3, P2, P4)).FindAnX(1.1);
-      target.Remove(new VoroniBuilder.Triple(new Point(removeAtX, 0)), out itemNode); //x21, 212, 123, 234, 342, 426, 262, 62x
-      Assert.AreEqual(P3, itemNode.Value.Left);
-      Assert.AreEqual(P2, itemNode.Value.Center);
-      Assert.AreEqual(P4, itemNode.Value.Right);
-      Assert.AreEqual(P2, itemNode.Previous.Value.Left);
-      Assert.AreEqual(P3, itemNode.Previous.Value.Center);
-      Assert.AreEqual(P4, itemNode.Previous.Value.Right);
-      Assert.AreEqual(P3, itemNode.Next().Value.Left);
-      Assert.AreEqual(P4, itemNode.Next().Value.Center);
-      Assert.AreEqual(P2, itemNode.Next().Value.Right);
-      Assert.AreEqual(8, target.Count);
-      AssertEdgeTwins(dummy);
-
     }
   }
 }
