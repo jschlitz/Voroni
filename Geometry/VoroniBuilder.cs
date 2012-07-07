@@ -74,7 +74,45 @@ namespace Geometry
     private static void AddBoundingBox(IList<Point> points, HalfEdgeStructure result)
     {
       //maxes and mins
+      Point fl = points.Aggregate((acc, p) => new Point(Math.Min(acc.X, p.X), Math.Min(acc.Y, p.Y)));
+      Point br = points.Aggregate((acc, p) => new Point(Math.Max(acc.X, p.X), Math.Max(acc.Y, p.Y)));
 
+      //setup the bounding box
+      Face inside = new Face(new Point((fl.X + br.X )/2, (fl.Y + br.Y )/2));
+      Face outside = new Face(new Point(double.PositiveInfinity, double.PositiveInfinity));
+      var back = new HalfEdge(inside, outside);
+      var left = new HalfEdge(inside, outside);
+      var front = new HalfEdge(inside, outside);
+      var right = new HalfEdge(inside, outside);
+      back.Next = left;
+      left.Next = front;
+      front.Next = right;
+      right.Next = back;
+      back.Twin.Next = right.Twin;
+      right.Twin.Next = front.Twin;
+      front.Twin.Next = left.Twin;
+      left.Twin.Next = back.Twin;
+
+      back.Origin = new Vertex{Coordinates = new Point(br.X, br.Y), IncidentEdge=back};
+      right.Twin.Origin = back.Origin;
+      left.Origin = new Vertex{Coordinates = new Point(fl.X, br.Y), IncidentEdge=left};
+      back.Twin.Origin = left.Origin;
+      front.Origin = new Vertex{Coordinates = new Point(fl.X, fl.Y), IncidentEdge=front};
+      left.Twin.Origin = front.Origin;
+      right.Origin = new Vertex{Coordinates = new Point(br.X, fl.Y), IncidentEdge=right};
+      front.Twin.Origin = right.Origin;
+
+      //someplace to store points
+      var intersections = new Dictionary<HalfEdge, List<Point>>() 
+      {
+        {back, new List<Point>()}, {right, new List<Point>()}, 
+        {front, new List<Point>()}, {left, new List<Point>()}
+      };
+
+      //foreach non-origned edge
+        //get bisector, find intersection w/ edge
+        //take the right-hand one, add to list
+      //chop each edge of the bounding box
     }
 
     private static void DropRelatedCircleEvents(SkipList<IEvent> pQueue, SkipNode<Triple> skipNode)
