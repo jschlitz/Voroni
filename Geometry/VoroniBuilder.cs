@@ -93,26 +93,72 @@ namespace Geometry
       front.Twin.Next = left.Twin;
       left.Twin.Next = back.Twin;
 
-      back.Origin = new Vertex{Coordinates = new Point(br.X, br.Y), IncidentEdge=back};
-      right.Twin.Origin = back.Origin;
-      left.Origin = new Vertex{Coordinates = new Point(fl.X, br.Y), IncidentEdge=left};
-      back.Twin.Origin = left.Origin;
-      front.Origin = new Vertex{Coordinates = new Point(fl.X, fl.Y), IncidentEdge=front};
-      left.Twin.Origin = front.Origin;
-      right.Origin = new Vertex{Coordinates = new Point(br.X, fl.Y), IncidentEdge=right};
-      front.Twin.Origin = right.Origin;
+      SetupBBEdge(br.X, br.Y, back, right);
+      SetupBBEdge(fl.X, br.Y, left, back);
+      SetupBBEdge(fl.X, fl.Y, front, left);
+      SetupBBEdge(br.X, fl.Y, right, front);
 
-      //someplace to store points
-      var intersections = new Dictionary<HalfEdge, List<Point>>() 
-      {
-        {back, new List<Point>()}, {right, new List<Point>()}, 
-        {front, new List<Point>()}, {left, new List<Point>()}
-      };
+      //someplace to store points (indexed by wellknown consts)
+      var intersections = new[] { new List<HalfEdge>(), new List<HalfEdge>(), new List<HalfEdge>(), new List<HalfEdge>() };
 
       //foreach non-origned edge
+      foreach (var edge in result.Edges.Where(e=>e.Origin==null))
+      {
         //get bisector, find intersection w/ edge
+        var v = (edge.Twin.IncidentFace.Site - edge.IncidentFace.Site) / 2;
+        var o = (edge.IncidentFace.Site + v);
+        double m = v.Y == 0 ? double.NaN : (- v.X / v.Y); //v is perpendicular to the slop of the edge
+        double b = double.IsNaN(m) ? double.NaN : o.Y - o.X * m;
+        var possibles = new[]
+        {
+          GetHIntersection(back.Origin.Coordinates.Y, o, m, b), GetVIntersection(left.Origin.Coordinates.X, o, m, b),
+          GetHIntersection(front.Origin.Coordinates.Y, o, m, b), GetVIntersection(right.Origin.Coordinates.X, o, m, b)
+        };
+        var dists = possibles.Select(p => 
+          {
+            if (p == NAN_POINT) return double.NaN;
+            if (CheckPoint(edge.IncidentFace.Site, o, p) != PointIs.Right) return double.NaN;
+            return Math.Abs((p - o).Length);
+          }).ToArray();
+
+        int index = -1;
+        for (int i = 0; i < 4; i++)
+        {
+          if (double.IsNaN(dists[i])) continue;
+          if (index != -1)
+            index = dists[index] < dists[i] ? index : i;
+        }
+        System.Diagnostics.Debug.Assert(index != -1, "Can't find intersection for " + edge.ToString());
+
         //take the right-hand one, add to list
-      //chop each edge of the bounding box
+        edge.Origin = new Vertex { Coordinates = possibles[index], IncidentEdge = edge };
+        intersections[index].Add(edge);
+        result.Verticies.Add(edge.Origin);
+      }
+
+      //TODO: now that we have the intersections go through and add each of the new edges that trace the boundry box, in order
+    }
+    const int BACK = 0;
+    const int LEFT = 1;
+    const int FRONT = 2;
+    const int RIGHT = 3;
+
+
+    private static Point GetVIntersection(double x, Point o, double m, double b)
+    {
+      return double.IsNaN(m) ? NAN_POINT : m == 0 ? new Point(x, o.Y) : new Point(x, m * x + b);
+    }
+
+    private static Point GetHIntersection(double y, Point o, double m, double b)
+    {
+      return double.IsNaN(m) ? new Point(o.X, y) : m == 0 ? NAN_POINT : new Point((y - b) / m, y);
+    }
+    static readonly Point NAN_POINT = new Point(double.NaN, double.NaN);
+
+    private static void SetupBBEdge(double x, double y, HalfEdge edge, HalfEdge prev)
+    {
+      edge.Origin = new Vertex { Coordinates = new Point(x, y), IncidentEdge = edge };
+      prev.Twin.Origin = edge.Origin;
     }
 
     private static void DropRelatedCircleEvents(SkipList<IEvent> pQueue, SkipNode<Triple> skipNode)
