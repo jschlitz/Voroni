@@ -20,7 +20,7 @@ namespace Geometry
     public static HalfEdgeStructure MakeDiagram(IList<Point> points)
     {
       //fill the queue with the initial point events.
-      var pQueue = new SkipList<IEvent>(PointComparer.Instance);
+      var pQueue = new SkipList<IEvent>(PointEventComparer.Instance);
       var result = new HalfEdgeStructure();
       var status = new StatusStructure(result);
       foreach (var p in points) pQueue.Add(new SiteEvent(p));
@@ -133,16 +133,77 @@ namespace Geometry
         //take the right-hand one, add to list
         edge.Origin = new Vertex { Coordinates = possibles[index], IncidentEdge = edge };
         intersections[index].Add(edge);
-        result.Verticies.Add(edge.Origin);
+        //result.Verticies.Add(edge.Origin);
+        
       }
 
       //TODO: now that we have the intersections go through and add each of the new edges that trace the boundry box, in order
+      AddBoundingEdge(intersections[BACK].OrderBy(he => he.Origin.Coordinates, PointComparer.Instance).Reverse(), back, result);
+      AddBoundingEdge(intersections[LEFT].OrderBy(he => he.Origin.Coordinates, PointComparer.Instance), left, result);
+      AddBoundingEdge(intersections[FRONT].OrderBy(he => he.Origin.Coordinates, PointComparer.Instance), front, result);
+      AddBoundingEdge(intersections[RIGHT].OrderBy(he => he.Origin.Coordinates, PointComparer.Instance).Reverse(), right, result);
+
+      foreach (var e in result.Edges)
+      {
+        if (e.IncidentFace == inside)
+          e.IncidentFace = GetGoodFace(e);
+      }
+
     }
     const int BACK = 0;
     const int LEFT = 1;
     const int FRONT = 2;
     const int RIGHT = 3;
 
+    private static Face GetGoodFace(HalfEdge e)
+    {
+      var item = e.Next;
+      while (item != e)
+      {
+        if (item.IncidentFace != e.IncidentFace)
+          return item.IncidentFace;
+        else
+          item = item.Next;
+      }
+
+      System.Diagnostics.Debug.Fail("Unable to get a good IncidentFace for " + e);
+      return null;
+    }
+
+    /// <summary>
+    /// boundEdge is the boundry edge (ccw from the inside to the outside). toAdd is the list of halfedges
+    /// emanating from this boundry, sorted in the order from boundEdge's source to end. None of these
+    /// edges nor verticies are part of result. This adds the edges in toAdd, and chops up boundEdge into
+    /// the necessary component edges and adds them.
+    /// </summary>
+    private static void AddBoundingEdge(IEnumerable<HalfEdge> toAdd, HalfEdge boundEdge, HalfEdgeStructure result)
+    {
+      //add the start
+      result.Verticies.Add(boundEdge.Origin);
+      var start = boundEdge.Origin;
+      foreach (var item in toAdd)
+      {
+        //get new edge from start to next vertex, add it
+        var newChunk = new HalfEdge(item.IncidentFace, boundEdge.Twin.IncidentFace) {Origin=start};
+        newChunk.Twin.Origin = item.Origin;
+        result.Verticies.Add(item.Origin);
+        result.Edges.Add(newChunk);
+        result.Edges.Add(newChunk.Twin);
+        boundEdge.Origin = item.Origin;
+
+        //hook up edges' nexts 
+        var right = boundEdge.Twin.Next.Twin;
+        newChunk.Next = item;
+        item.Twin.Next = boundEdge;
+        boundEdge.Twin.Next = newChunk.Twin;
+        newChunk.Twin.Next = right.Twin;
+        right.Next = newChunk;
+      }
+
+      result.Edges.Add(boundEdge);
+      result.Edges.Add(boundEdge.Twin);
+      //what about incident face...? Maybe this needs to wait for completion?
+    }
 
     private static Point GetVIntersection(double x, Point o, double m, double b)
     {
@@ -776,24 +837,47 @@ namespace Geometry
 
 
     /// <summary>
-    /// Compare 2 points by their Y value, high to low. if they are equal, compare by X, low to high.
+    /// Compare 2 point events by their Y value, high to low. if they are equal, compare by X, low to high.
     /// </summary>
-    private class PointComparer : IComparer<IEvent>
+    private class PointComparer : IComparer<Point>
     {
       public static readonly PointComparer Instance = new PointComparer();
 
+      public int Compare(Point x, Point y)
+      {
+        double result = -1 * (x.Y - y.Y);
+        if (result == 0)
+          result = x.X - y.X;//note this is reversed.
+
+        if (result > 0)
+          return 1;
+        else if (result < 0)
+          return -1;
+        else
+          return 0;
+      }
+    }
+
+    /// <summary>
+    /// Compare 2 point events by their Y value, high to low. if they are equal, compare by X, low to high.
+    /// </summary>
+    private class PointEventComparer : IComparer<IEvent>
+    {
+      public static readonly PointEventComparer Instance = new PointEventComparer();
+
       public int Compare(IEvent x, IEvent y)
       {
-        double result = -1 * (x.P.Y - y.P.Y);
-        if (result == 0)
-          result = x.P.X - y.P.X;//note this is reversed.
+        return PointComparer.Instance.Compare(x.P, y.P);
+        //double result = -1 * (x.P.Y - y.P.Y);
+        //if (result == 0)
+        //  result = x.P.X - y.P.X;//note this is reversed.
 
-        if (result > 0) 
-          return 1;
-        else if (result < 0) 
-          return -1;
-        else 
-          return 0;
+        //if (result > 0) 
+        //  return 1;
+        //else if (result < 0) 
+        //  return -1;
+        //else 
+        //  return 0;
       }
     }
   }

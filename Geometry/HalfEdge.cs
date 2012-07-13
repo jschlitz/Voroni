@@ -41,7 +41,7 @@ namespace Geometry
     /// <summary>
     /// Which face is this touching?
     /// </summary>
-    public Face IncidentFace { get; protected set; }
+    public Face IncidentFace { get; set; }
 
     public HalfEdge Next { get; set; }
 
