@@ -102,7 +102,7 @@ namespace TestProject1
     {
       var myListener = new TestTraceListener();
       try
-      {
+     { 
         Trace.Listeners.Add(myListener);
 
         var points = new[] { 
@@ -111,7 +111,7 @@ namespace TestProject1
         var edgeGraph = VoroniBuilder.MakeDiagram(points);
         var theTrace = myListener.GetTrace();
         
-        //TODO use Trace events to emit this info. Otherwise I have to wait until the end to debug. Ew.
+        // use Trace events to emit this info. Otherwise I have to wait until the end to debug. Ew.
         //as we go through, the arc structure should be:
         //0, 010, 01020, 01 20, 01 2420, 01 24 0
         var expected = new [] {"Dequeued Site:(5,7)",
@@ -133,9 +133,35 @@ namespace TestProject1
             i++;
         }
         Assert.AreEqual(i, expected.Length);
+
+        CheckEdgeGraph(edgeGraph);
       }
       finally
       {        Trace.Listeners.Remove(myListener);      }
+
+    }
+
+    private void CheckEdgeGraph(HalfEdgeStructure edgeGraph)
+    {
+      var checkoff = new List<HalfEdge>(edgeGraph.Edges);
+      //faces should all have closed graphs
+      foreach (var f in edgeGraph.Faces)
+        CheckOffEdges(checkoff, f.OuterEdge);
+      
+      //now we just have 1 poly for the outer bounds facing in.
+      CheckOffEdges(checkoff, checkoff[0]);
+
+      Assert.AreEqual(0, checkoff.Count, "Dangling edges: " + checkoff.ToString());
+    }
+
+    private static void CheckOffEdges(List<HalfEdge> checkoff, HalfEdge start)
+    {
+      var e = start;
+      do
+      {
+        Assert.IsTrue(checkoff.Remove(e), "tried to pop an edge more than once:" + e);
+        e = e.Next;
+      } while (e != start);
     }
 
     private class TestTraceListener : TraceListener

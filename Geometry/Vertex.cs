@@ -8,6 +8,10 @@ namespace Geometry
 {
   public class Vertex
   {
+    public override string ToString()
+    {
+      return "(v:" + Coordinates.X.ToString("f2") + "," + Coordinates.Y.ToString("f2") + ")";
+    }
     /// <summary>
     /// The point
     /// </summary>

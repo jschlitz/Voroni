@@ -65,17 +65,22 @@ namespace Geometry
         else System.Diagnostics.Debug.Assert(false, "pQueue had non-circle, non-site event.");
       }
 
-      AddBoundingBox(points, result);
+      AddBoundingBox(result);
 
       System.Diagnostics.Trace.WriteLine("Final: " + status);
       return result;
     }
 
-    private static void AddBoundingBox(IList<Point> points, HalfEdgeStructure result)
+    private static void AddBoundingBox(HalfEdgeStructure result)
     {
       //maxes and mins
-      Point fl = points.Aggregate((acc, p) => new Point(Math.Min(acc.X, p.X), Math.Min(acc.Y, p.Y)));
-      Point br = points.Aggregate((acc, p) => new Point(Math.Max(acc.X, p.X), Math.Max(acc.Y, p.Y)));
+      var possibleBoundPoints = result.Verticies.Select(v => v.Coordinates)
+        .Concat(result.Faces.Select(f => f.Site));
+      Point fl = possibleBoundPoints.Aggregate((acc, p) => new Point(Math.Min(acc.X, p.X), Math.Min(acc.Y, p.Y)));
+      Point br = possibleBoundPoints.Aggregate((acc, p) => new Point(Math.Max(acc.X, p.X), Math.Max(acc.Y, p.Y)));
+
+      fl = new Point(fl.X - 1, fl.Y - 1);
+      br = new Point(br.X + 1, br.Y + 1);
 
       //setup the bounding box
       Face inside = new Face(new Point((fl.X + br.X )/2, (fl.Y + br.Y )/2));
@@ -125,8 +130,8 @@ namespace Geometry
         for (int i = 0; i < 4; i++)
         {
           if (double.IsNaN(dists[i])) continue;
-          if (index != -1)
-            index = dists[index] < dists[i] ? index : i;
+
+          index = (index == -1) || (dists[index] > dists[i]) ? i : index;
         }
         System.Diagnostics.Debug.Assert(index != -1, "Can't find intersection for " + edge.ToString());
 
@@ -137,7 +142,7 @@ namespace Geometry
         
       }
 
-      //TODO: now that we have the intersections go through and add each of the new edges that trace the boundry box, in order
+      //now that we have the intersections go through and add each of the new edges that trace the boundry box, in order
       AddBoundingEdge(intersections[BACK].OrderBy(he => he.Origin.Coordinates, PointComparer.Instance).Reverse(), back, result);
       AddBoundingEdge(intersections[LEFT].OrderBy(he => he.Origin.Coordinates, PointComparer.Instance), left, result);
       AddBoundingEdge(intersections[FRONT].OrderBy(he => he.Origin.Coordinates, PointComparer.Instance), front, result);
@@ -146,7 +151,7 @@ namespace Geometry
       foreach (var e in result.Edges)
       {
         if (e.IncidentFace == inside)
-          e.IncidentFace = GetGoodFace(e);
+          e.IncidentFace = (result.Faces.Count == 1) ? result.Faces[0] : GetGoodFace(e);
       }
 
     }
