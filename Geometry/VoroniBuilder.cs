@@ -186,6 +186,7 @@ namespace Geometry
       //add the start
       result.Verticies.Add(boundEdge.Origin);
       var start = boundEdge.Origin;
+      var incoming = boundEdge.Twin.Next.Twin;
       foreach (var item in toAdd)
       {
         //get new edge from start to next vertex, add it
@@ -197,12 +198,17 @@ namespace Geometry
         boundEdge.Origin = item.Origin;
 
         //hook up edges' nexts 
-        var right = boundEdge.Twin.Next.Twin;
+        //var right = boundEdge.Twin.Next.Twin;//!!!! wrong!
         newChunk.Next = item;
         item.Twin.Next = boundEdge;
+        var tmp = boundEdge.Twin.Next;
         boundEdge.Twin.Next = newChunk.Twin;
-        newChunk.Twin.Next = right.Twin;
-        right.Next = newChunk;
+        //newChunk.Twin.Next = incoming.Twin;//!!!! wrong!
+        newChunk.Twin.Next = tmp;
+        incoming.Next = newChunk;
+
+        start = item.Origin;
+        incoming = item.Twin;
       }
 
       result.Edges.Add(boundEdge);
