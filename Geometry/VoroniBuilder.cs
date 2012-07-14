@@ -552,12 +552,28 @@ namespace Geometry
         var predecessors = base.Add(item, out itemNode);
 
         //the node we dup is itemnode.Next, and we make it previous. hmm..
-        if (itemNode.Next() == null) //only during first insertion
+        if (itemNode.Next() == null) //only during first insertion(s) on the same Y
         {
           var newFace = new Face(itemNode.Value.Center);
           FinalResult.Faces.Add(newFace);
           itemNode.Value = new Triple(null, itemNode.Value.Center, null);
           itemNode.Value.MyFace = newFace;
+          if (itemNode.Previous != _Root) //more than 1 on the same Y
+          {
+            itemNode.Value.Left = itemNode.Previous.Value.Center;
+            itemNode.Previous.Value.Right = itemNode.Value.Center;
+
+
+            var newEdge = new HalfEdge(newFace, itemNode.Previous.Value.MyFace);
+            FinalResult.Edges.Add(newEdge);
+            FinalResult.Edges.Add(newEdge.Twin);
+            itemNode.Value.LeftEdge = newEdge;
+            itemNode.Previous.Value.RightEdge = newEdge.Twin;
+
+            //set edge for the faces
+            newFace.OuterEdge = newEdge;
+            itemNode.Previous.Value.MyFace.OuterEdge = newEdge.Twin;
+          }
         }
         else
         {
@@ -777,6 +793,11 @@ namespace Geometry
           System.Diagnostics.Debug.Assert(n.IsIndex, "BeachLineComparer.Compare called without an index triplet");
         }
         
+        //special case: if they're on the same Y, we can just compare the X value. 
+        //Important when you start out with several on the same line
+        if (index.Center.Y == n.Center.Y)
+          return index.Center.X >= n.Center.X ? 1 : -1;//yeah, I should do a 0 if they're equal. meh.
+
         var nParabola = new Parabola(n.Center, Directix);
 
         double lBound = n.LeftBound(Directix);

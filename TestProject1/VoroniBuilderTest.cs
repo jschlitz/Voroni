@@ -98,23 +98,34 @@ namespace TestProject1
     }
 
     [TestMethod]
+    public void TestMultiY()
+    {
+      //starting points out on the same Y can be tricky.
+      var points = new[] { new Point(3, 4), new Point(1, 4), new Point(6, 2), new Point(10, 4) };
+
+      var expected = new[]{"Dequeued Site:(1,4)",
+"Dequeued Site:(3,4)",
+"Dequeued Site:(10,4)",
+"Dequeued Site:(6,2)",
+"Enqueued Circle:(2,-5.6041219597369 - (1,4)[3,4](6,2))",
+"Enqueued Circle:(6.5,1.96887112585073 - (6,2)[3,4](10,4))",
+"Dequeued Circle:(6.5,1.96887112585073 - (6,2)[3,4](10,4))",
+"Dequeued Circle:(2,-5.6041219597369 - (1,4)[3,4](6,2))",
+"Final: H:1V:(x)[1,4](6,2), H:1V:(1,4)[6,2](10,4), H:1V:(6,2)[10,4](x), "};
+
+      CheckTraceAndGraph(points, expected);
+    }
+
+    [TestMethod]
     public void TestCircleRemovals()
     {
-      var myListener = new TestTraceListener();
-      try
-     { 
-        Trace.Listeners.Add(myListener);
-
-        var points = new[] { 
+      var points = new[] { 
           new Point(2, 6), new Point(5, 7), new Point(6, 2), new Point(9, 1) };
 
-        var edgeGraph = VoroniBuilder.MakeDiagram(points);
-        var theTrace = myListener.GetTrace();
-        
-        // use Trace events to emit this info. Otherwise I have to wait until the end to debug. Ew.
-        //as we go through, the arc structure should be:
-        //0, 010, 01020, 01 20, 01 2420, 01 24 0
-        var expected = new [] {"Dequeued Site:(5,7)",
+      // use Trace events to emit this info. Otherwise I have to wait until the end to debug. Ew.
+      //as we go through, the arc structure should be:
+      //0, 010, 01020, 01 20, 01 2420, 01 24 0
+      var expected = new[] {"Dequeued Site:(5,7)",
 "Dequeued Site:(2,6)",
 "Dequeued Site:(6,2)",
 "Enqueued Circle:(4.25,1.39956143725216 - (2,6)[5,7](6,2))",
@@ -124,21 +135,35 @@ namespace TestProject1
 "Dequeued Circle:(8.71428571428571,0.990159470357534 - (6,2)[5,7](9,1))",
 "Final: H:1V:(x)[5,7](2,6), H:1V:(5,7)[2,6](6,2), H:1V:(2,6)[6,2](9,1), H:1V:(6,2)[9,1](5,7), H:1V:(9,1)[5,7](x),",
 };
+      CheckTraceAndGraph(points, expected);
+
+    }
+
+    private HalfEdgeStructure CheckTraceAndGraph(Point[] points, string[] expected)
+    {
+      var myListener = new TestTraceListener();
+      try
+      {
+        Trace.Listeners.Add(myListener);
+
+        var edgeGraph = VoroniBuilder.MakeDiagram(points);
+        var theTrace = myListener.GetTrace();
+
         //perhaps there are extra things in the trace. But we should have all of expected[] in order
         int i = 0;
         foreach (var actual in theTrace)
         {
-          if (i>=expected.Length) break;
-          if(actual.StartsWith(expected[i]))
+          if (i >= expected.Length) break;
+          if (actual.StartsWith(expected[i]))
             i++;
         }
         Assert.AreEqual(i, expected.Length);
 
         CheckEdgeGraph(edgeGraph);
+        return edgeGraph;
       }
       finally
-      {        Trace.Listeners.Remove(myListener);      }
-
+      { Trace.Listeners.Remove(myListener); }
     }
 
     private void CheckEdgeGraph(HalfEdgeStructure edgeGraph)
