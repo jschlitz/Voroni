@@ -136,7 +136,39 @@ namespace TestProject1
 "Final: H:1V:(x)[5,7](2,6), H:1V:(5,7)[2,6](6,2), H:1V:(2,6)[6,2](9,1), H:1V:(6,2)[9,1](5,7), H:1V:(9,1)[5,7](x),",
 };
       CheckTraceAndGraph(points, expected);
+    }
 
+    [TestMethod]
+    public void TextMultiX()
+    {
+      //starting points out on the same X should be just dandy. Let's verify can be tricky.
+      var points = new[] { new Point(3, 6), new Point(3, 12), new Point(3, 3), new Point(2, 4) };
+      var expected = new[]{"Dequeued Site:(3,12)",
+"Dequeued Site:(3,6)",
+"Dequeued Site:(2,4)",
+"Enqueued Circle:(-5.5,-0.013878188659973 - (3,12)[3,6](2,4))",
+"Dequeued Site:(3,3)",
+"Enqueued Circle:(3.5,2.91886116991581 - (3,3)[2,4](3,6))",
+"Dequeued Circle:(3.5,2.91886116991581 - (3,3)[2,4](3,6))",
+"Dequeued Circle:(-5.5,-0.013878188659973 - (3,12)[3,6](2,4))",
+"Final: H:1V:(x)[3,12](2,4), H:1V:(3,12)[2,4](3,3), H:1V:(2,4)[3,3](3,6), H:1V:(3,3)[3,6](3,12), H:1V:(3,6)[3,12](x), "
+};
+
+      CheckTraceAndGraph(points, expected);
+    }
+
+    [TestMethod]
+    public void TestInfinite()
+    {
+      var points = new[] { new Point(2, 4), new Point(3, 6), new Point(5, 10), new Point(7, 14) };
+      var expected = new[]{"Dequeued Site:(7,14)",
+"Dequeued Site:(5,10)",
+"Dequeued Site:(3,6)",
+"Dequeued Site:(2,4)",
+"Final: H:1V:(x)[7,14](5,10), H:1V:(7,14)[5,10](3,6), H:1V:(5,10)[3,6](2,4), H:1V:(3,6)[2,4](3,6), H:1V:(2,4)[3,6](5,10), H:1V:(3,6)[5,10](7,14), H:1V:(5,10)[7,14](x), "
+};
+
+      CheckTraceAndGraph(points, expected);
     }
 
     private HalfEdgeStructure CheckTraceAndGraph(Point[] points, string[] expected)
