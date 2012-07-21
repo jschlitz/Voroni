@@ -1,6 +1,7 @@
 ﻿using Geometry;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Reflection;
 using System.Text;
 using System.Windows;
 using System.Linq;
@@ -69,6 +70,17 @@ namespace TestProject1
     #endregion
 
 
+    [TestMethod]
+    public void AAATestConfiguration()
+    {
+      Assembly ass = typeof(Geometry.Circle).Assembly;
+        //Assembly.LoadFrom("Geometry.dll");
+      var attr = ass.GetCustomAttributes(typeof(AssemblyConfigurationAttribute), false)
+        .Cast <AssemblyConfigurationAttribute>();
+      foreach (var item in attr)
+        Assert.IsTrue(item.Configuration == "DEBUG", "Geometry.dll's configuration is " + item.Configuration + ", which will cause errors in testing.");
+    }
+    
     /// <summary>
     ///A test for MakeDiagram
     ///</summary>
@@ -171,6 +183,52 @@ namespace TestProject1
       CheckTraceAndGraph(points, expected);
     }
 
+    [TestMethod]
+    public void TestBigish()
+    {
+      var diagram = VoroniBuilder.MakeDiagram(InfinitePoints().Take(1000).ToList());
+      CheckEdgeGraph(diagram);
+    }
+
+
+    //[TestMethod]
+    public void TimeTest()
+    {
+      const int COUNT = 6;
+      var times = new TimeSpan[COUNT];
+      for (int i = 0; i < COUNT; i++)
+        times[i] = TimeVoroni(InfinitePoints().Take(Pow(10, i+1)));
+
+      for (int i = 2; i < COUNT; i++) // 10 items doesn't compare well.
+        Assert.IsTrue(times[i - 1] < times[i]);
+    }
+
+    private static int Pow(int b, int e)
+    {
+      int result = 1;
+      for (int i = 0; i < e; i++)
+        result *= b;
+
+      return result;
+    }
+
+    private static TimeSpan TimeVoroni(IEnumerable<Point> points)
+    {
+      var l = points.ToList();
+      var start = DateTime.Now;
+      VoroniBuilder.MakeDiagram(l);
+      return DateTime.Now - start;
+    }
+
+    private static IEnumerable<Point> InfinitePoints()
+    {
+      var r = new Random(1982);
+      while(true)
+      {
+        yield return new Point(r.NextDouble() * 1000, r.NextDouble() * 1000);
+      }
+    }
+
     private HalfEdgeStructure CheckTraceAndGraph(Point[] points, string[] expected)
     {
       var myListener = new TestTraceListener();
@@ -220,6 +278,7 @@ namespace TestProject1
         e = e.Next;
       } while (e != start);
     }
+
 
     private class TestTraceListener : TraceListener
     {

@@ -7,6 +7,7 @@ using DataStructures;
 using System.IO;
 using System.Linq.Expressions;
 
+
 namespace Geometry
 {
   /// <summary>
@@ -32,7 +33,7 @@ namespace Geometry
         //dequeue
         IEvent item = pQueue.First();
         pQueue.Remove(item);
-        System.Diagnostics.Trace.WriteLine("Dequeued " + item);
+        System.Diagnostics.Debug.WriteLine("Dequeued " + item);
 
         if (item is SiteEvent)
         {
@@ -67,7 +68,7 @@ namespace Geometry
 
       AddBoundingBox(result);
 
-      System.Diagnostics.Trace.WriteLine("Final: " + status);
+      System.Diagnostics.Debug.WriteLine("Final: " + status);
       return result;
     }
 
@@ -242,7 +243,7 @@ namespace Geometry
       if (skipNode.Value.VanishEvent == null) return;
 
       pQueue.Remove(skipNode.Value.VanishEvent);
-      System.Diagnostics.Trace.WriteLine("Removed " + skipNode.Value.VanishEvent);
+      System.Diagnostics.Debug.WriteLine("Removed " + skipNode.Value.VanishEvent);
       skipNode.Value.VanishEvent = null;
     }
 
@@ -289,12 +290,12 @@ namespace Geometry
         if (arc.VanishEvent != null)
         {
           pQueue.Remove(arc.VanishEvent);
-          System.Diagnostics.Trace.WriteLine("Removed " + arc.VanishEvent);
+          System.Diagnostics.Debug.WriteLine("Removed " + arc.VanishEvent);
         }
         arc.VanishEvent = ce;
 
         pQueue.Add(ce);
-        System.Diagnostics.Trace.WriteLine("Enqueued " + ce);
+        System.Diagnostics.Debug.WriteLine("Enqueued " + ce);
 
       }
     }

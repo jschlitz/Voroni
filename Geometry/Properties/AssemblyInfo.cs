@@ -7,7 +7,6 @@ using System.Runtime.InteropServices;
 // associated with an assembly.
 [assembly: AssemblyTitle("Geometry")]
 [assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
 [assembly: AssemblyProduct("Geometry")]
 [assembly: AssemblyCopyright("Copyright © Microsoft 2012")]
@@ -34,3 +33,9 @@ using System.Runtime.InteropServices;
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
+
+#if DEBUG
+[assembly: AssemblyConfiguration("DEBUG")]
+#else
+[assembly: AssemblyConfiguration("RELEASE")]
+#endif
